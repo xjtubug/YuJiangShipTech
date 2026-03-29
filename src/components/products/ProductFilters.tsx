@@ -1,0 +1,284 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface Category {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameZh: string;
+  nameJa: string;
+  nameAr: string;
+  productCount: number;
+}
+
+interface ProductFiltersProps {
+  categories: Category[];
+  locale: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getLocalizedField(obj: any, field: string, locale: string): string {
+  const key = `${field}${locale.charAt(0).toUpperCase() + locale.slice(1)}`;
+  return obj[key] || obj[`${field}En`] || '';
+}
+
+export default function ProductFilters({ categories, locale }: ProductFiltersProps) {
+  const t = useTranslations('products');
+  const currentLocale = useLocale();
+  const effectiveLocale = locale || currentLocale;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
+
+  const activeCategory = searchParams.get('category') || '';
+  const activeSort = searchParams.get('sort') || 'newest';
+  const activeSearch = searchParams.get('search') || '';
+
+  const hasActiveFilters = activeCategory || activeSearch || minPrice || maxPrice || activeSort !== 'newest';
+
+  const updateParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      // Reset page when filters change
+      params.delete('page');
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === '') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+
+      const qs = params.toString();
+      router.push(`${pathname}${qs ? `?${qs}` : ''}`);
+    },
+    [searchParams, router, pathname]
+  );
+
+  const handleCategoryClick = (slug: string) => {
+    updateParams({ category: slug === activeCategory ? null : slug });
+  };
+
+  const handleSortChange = (sort: string) => {
+    updateParams({ sort: sort === 'newest' ? null : sort });
+  };
+
+  const handlePriceApply = () => {
+    updateParams({
+      minPrice: minPrice || null,
+      maxPrice: maxPrice || null,
+    });
+  };
+
+  const handleClearFilters = () => {
+    setMinPrice('');
+    setMaxPrice('');
+    router.push(pathname);
+  };
+
+  const sortOptions = [
+    { value: 'newest', label: t('sortNewest') },
+    { value: 'price_asc', label: t('sortPriceLow') },
+    { value: 'price_desc', label: t('sortPriceHigh') },
+    { value: 'popular', label: t('sortPopular') },
+  ];
+
+  const filterContent = (
+    <div className="space-y-6">
+      {/* Sort */}
+      <div>
+        <h4 className="text-sm font-semibold text-primary-800 mb-3">{t('sortBy')}</h4>
+        <select
+          value={activeSort}
+          onChange={(e) => handleSortChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 text-primary-700 bg-white"
+        >
+          {sortOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Categories */}
+      <div>
+        <h4 className="text-sm font-semibold text-primary-800 mb-3">{t('category')}</h4>
+        <ul className="space-y-1">
+          <li>
+            <button
+              onClick={() => updateParams({ category: null })}
+              className={cn(
+                'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors',
+                !activeCategory
+                  ? 'bg-primary-700 text-white'
+                  : 'text-primary-600 hover:bg-primary-50'
+              )}
+            >
+              <span>{t('allCategories')}</span>
+              <span className="text-xs opacity-70">
+                {categories.reduce((s, c) => s + c.productCount, 0)}
+              </span>
+            </button>
+          </li>
+          {categories.map((cat) => {
+            const catName = getLocalizedField(cat, 'name', effectiveLocale);
+            return (
+              <li key={cat.id}>
+                <button
+                  onClick={() => handleCategoryClick(cat.slug)}
+                  className={cn(
+                    'w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors',
+                    activeCategory === cat.slug
+                      ? 'bg-primary-700 text-white'
+                      : 'text-primary-600 hover:bg-primary-50'
+                  )}
+                >
+                  <span className="truncate">{catName}</span>
+                  <span className="text-xs opacity-70 ml-2">
+                    {cat.productCount}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Price Range */}
+      <div>
+        <h4 className="text-sm font-semibold text-primary-800 mb-3">{t('priceRange')}</h4>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder={t('minPrice')}
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500"
+            min="0"
+          />
+          <span className="text-primary-400">–</span>
+          <input
+            type="number"
+            placeholder={t('maxPrice')}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500"
+            min="0"
+          />
+        </div>
+        <button
+          onClick={handlePriceApply}
+          className="mt-2 w-full text-sm font-medium py-2 rounded-lg bg-secondary-600 text-white hover:bg-secondary-700 transition-colors"
+        >
+          {t('apply')}
+        </button>
+      </div>
+
+      {/* Active filters / Clear */}
+      {hasActiveFilters && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-primary-500 uppercase tracking-wider">
+              Active filters
+            </span>
+            <button
+              onClick={handleClearFilters}
+              className="text-xs text-red-500 hover:text-red-700 font-medium"
+            >
+              {t('clearFilters')}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {activeCategory && (
+              <span className="inline-flex items-center gap-1 text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                <Tag className="w-3 h-3" />
+                {categories.find((c) => c.slug === activeCategory)?.nameEn || activeCategory}
+                <button
+                  onClick={() => updateParams({ category: null })}
+                  className="hover:text-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {activeSearch && (
+              <span className="inline-flex items-center gap-1 text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                &ldquo;{activeSearch}&rdquo;
+                <button
+                  onClick={() => updateParams({ search: null })}
+                  className="hover:text-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile toggle */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="lg:hidden w-full flex items-center justify-between px-4 py-3 mb-4 bg-white border border-primary-200 rounded-xl text-sm font-medium text-primary-700"
+      >
+        <span className="flex items-center gap-2">
+          <SlidersHorizontal className="w-4 h-4" />
+          {t('showFilters')}
+          {hasActiveFilters && (
+            <span className="w-2 h-2 bg-accent-500 rounded-full" />
+          )}
+        </span>
+        {mobileOpen ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
+      </button>
+
+      {/* Mobile panel */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden overflow-hidden mb-4"
+          >
+            <div className="p-4 bg-white border border-primary-200 rounded-xl">
+              {filterContent}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:block sticky top-24 p-5 bg-white border border-primary-100 rounded-xl">
+        {filterContent}
+      </div>
+    </>
+  );
+}
