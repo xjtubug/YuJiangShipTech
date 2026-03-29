@@ -24,6 +24,10 @@ import {
   AlertTriangle,
   FileJson,
   Check,
+  ImagePlus,
+  Film,
+  Sparkles,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -75,6 +79,7 @@ type FormData = {
   descJa: string;
   descAr: string;
   sku: string;
+  priceCny: string;
   priceUsd: string;
   moq: string;
   leadTimeDays: string;
@@ -88,6 +93,8 @@ type FormData = {
   status: string;
 };
 
+const CNY_TO_USD_RATE = 0.137;
+
 const EMPTY_FORM: FormData = {
   nameEn: '',
   nameZh: '',
@@ -98,6 +105,7 @@ const EMPTY_FORM: FormData = {
   descJa: '',
   descAr: '',
   sku: '',
+  priceCny: '0',
   priceUsd: '0',
   moq: '1',
   leadTimeDays: '30',
@@ -115,6 +123,12 @@ const STATUS_COLORS: Record<string, string> = {
   published: 'bg-green-100 text-green-800 ring-green-600/20',
   draft: 'bg-gray-100 text-gray-600 ring-gray-500/20',
   archived: 'bg-orange-100 text-orange-800 ring-orange-600/20',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  published: '已发布',
+  draft: '草稿',
+  archived: '已归档',
 };
 
 const BATCH_TEMPLATE = [
@@ -140,6 +154,36 @@ const BATCH_TEMPLATE = [
     published: true,
     status: 'draft',
   },
+];
+
+const CSV_TEMPLATE_HEADERS = [
+  'SKU',
+  '产品名称(中文)',
+  'Product Name(EN)',
+  '名前(JA)',
+  'الاسم(AR)',
+  '描述(中文)',
+  'Description(EN)',
+  '价格(CNY)',
+  '分类',
+  '起订量',
+  '交货天数',
+  '图片URL',
+];
+
+const CSV_TEMPLATE_EXAMPLE = [
+  'MDE-200HP-001',
+  '船用柴油发动机 200马力',
+  'Marine Diesel Engine 200HP',
+  '船舶用ディーゼルエンジン 200馬力',
+  'محرك ديزل بحري 200 حصان',
+  '高性能船用柴油发动机',
+  'High-performance marine diesel engine',
+  '100000',
+  '发动机',
+  '1',
+  '45',
+  'https://example.com/img1.jpg',
 ];
 
 /* ------------------------------------------------------------------ */
@@ -191,13 +235,13 @@ function DeleteModal({
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Delete Product</h3>
-            <p className="text-sm text-gray-500">This action cannot be undone.</p>
+            <h3 className="text-lg font-semibold text-gray-900">删除产品</h3>
+            <p className="text-sm text-gray-500">此操作无法撤销。</p>
           </div>
         </div>
         <p className="text-sm text-gray-700 mb-6">
-          Are you sure you want to delete{' '}
-          <span className="font-semibold">{product.nameEn}</span> (SKU: {product.sku})?
+          确定要删除{' '}
+          <span className="font-semibold">{product.nameEn}</span> (SKU: {product.sku})？
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -213,7 +257,7 @@ function DeleteModal({
             className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
           >
             {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Delete
+            确认删除
           </button>
         </div>
       </div>
@@ -225,13 +269,22 @@ function DeleteModal({
 /*  Product Form Modal (Create / Edit)                                */
 /* ------------------------------------------------------------------ */
 
+interface UploadingFile {
+  id: string;
+  file: File;
+  progress: number;
+  status: 'uploading' | 'done' | 'error';
+  url?: string;
+  error?: string;
+}
+
 function ProductFormModal({
   product,
   categories,
   onClose,
   onSaved,
 }: {
-  product: Product | null; // null = create mode
+  product: Product | null;
   categories: Category[];
   onClose: () => void;
   onSaved: () => void;
@@ -239,6 +292,7 @@ function ProductFormModal({
   const isEdit = !!product;
   const [form, setForm] = useState<FormData>(() => {
     if (!product) return EMPTY_FORM;
+    const usdVal = product.priceUsd ?? 0;
     return {
       nameEn: product.nameEn,
       nameZh: product.nameZh ?? '',
@@ -249,7 +303,8 @@ function ProductFormModal({
       descJa: product.descJa ?? '',
       descAr: product.descAr ?? '',
       sku: product.sku,
-      priceUsd: String(product.priceUsd),
+      priceCny: String(Math.round(usdVal / CNY_TO_USD_RATE * 100) / 100),
+      priceUsd: String(usdVal),
       moq: String(product.moq),
       leadTimeDays: String(product.leadTimeDays),
       categoryId: product.categoryId ?? '',
@@ -264,14 +319,153 @@ function ProductFormModal({
   });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'descriptions' | 'media' | 'advanced'>('general');
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  const setCnyPrice = (cny: string) => {
+    const cnyNum = parseFloat(cny) || 0;
+    const usd = Math.round(cnyNum * CNY_TO_USD_RATE * 100) / 100;
+    setForm((prev) => ({ ...prev, priceCny: cny, priceUsd: String(usd) }));
+  };
+
+  // --- Image helpers ---
+  const imageList: string[] = (() => {
+    try { const arr = JSON.parse(form.images); return Array.isArray(arr) ? arr : []; }
+    catch { return []; }
+  })();
+
+  const setImageList = (imgs: string[]) => set('images', JSON.stringify(imgs));
+
+  const removeImage = (idx: number) => {
+    const next = [...imageList];
+    next.splice(idx, 1);
+    setImageList(next);
+  };
+
+  const addImages = (urls: string[]) => {
+    setImageList([...imageList, ...urls]);
+  };
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    const validExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'svg']);
+    const toUpload: UploadingFile[] = [];
+    for (const file of Array.from(files)) {
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (!validExts.has(ext)) {
+        toast.error(`不支持的格式: ${file.name}`);
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`文件过大: ${file.name} (最大10MB)`);
+        continue;
+      }
+      toUpload.push({ id: `${Date.now()}-${Math.random()}`, file, progress: 0, status: 'uploading' });
+    }
+    if (!toUpload.length) return;
+    setUploadingFiles((prev) => [...prev, ...toUpload]);
+
+    const newUrls: string[] = [];
+    for (const item of toUpload) {
+      try {
+        const fd = new globalThis.FormData();
+        fd.append('file', item.file);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '上传失败');
+        const data = await res.json();
+        newUrls.push(data.url);
+        setUploadingFiles((prev) => prev.map((f) => f.id === item.id ? { ...f, status: 'done', url: data.url, progress: 100 } : f));
+      } catch (e: unknown) {
+        setUploadingFiles((prev) => prev.map((f) => f.id === item.id ? { ...f, status: 'error', error: e instanceof Error ? e.message : '上传失败' } : f));
+      }
+    }
+    if (newUrls.length) addImages(newUrls);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!['mp4', 'webm'].includes(ext)) { toast.error('仅支持 mp4、webm 格式'); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error('视频最大50MB'); return; }
+    setUploadingVideo(true);
+    try {
+      const fd = new globalThis.FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '上传失败');
+      const data = await res.json();
+      set('videoUrl', data.url);
+      toast.success('视频上传成功');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '视频上传失败');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  // --- AI image optimize (CSS filter via canvas) ---
+  const optimizeImage = async (imgUrl: string, idx: number) => {
+    try {
+      toast.loading('AI优化中...', { id: 'ai-opt' });
+      const img = document.createElement('img');
+      img.crossOrigin = 'anonymous';
+      img.src = imgUrl;
+      await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+
+      // Marine-themed background overlay
+      ctx.fillStyle = '#f0f8ff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Apply brightness and contrast
+      ctx.filter = 'brightness(1.08) contrast(1.12) saturate(1.05)';
+      ctx.drawImage(img, 0, 0);
+      ctx.filter = 'none';
+
+      // Subtle marine-blue vignette overlay
+      const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width * 0.3, canvas.width / 2, canvas.height / 2, canvas.width * 0.7);
+      gradient.addColorStop(0, 'rgba(0,80,150,0)');
+      gradient.addColorStop(1, 'rgba(0,50,100,0.06)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.92));
+
+      const fd = new globalThis.FormData();
+      fd.append('file', blob, `optimized-${Date.now()}.jpg`);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('上传优化图片失败');
+      const data = await res.json();
+
+      const next = [...imageList];
+      next[idx] = data.url;
+      setImageList(next);
+      toast.success('图片优化完成', { id: 'ai-opt' });
+    } catch {
+      toast.error('图片优化失败', { id: 'ai-opt' });
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!form.nameEn.trim()) return toast.error('English name is required');
-    if (!form.sku.trim()) return toast.error('SKU is required');
-    if (!form.categoryId) return toast.error('Category is required');
+    if (!form.nameEn.trim()) return toast.error('请填写英文名称');
+    if (!form.sku.trim()) return toast.error('请填写SKU编号');
+    if (!form.categoryId) return toast.error('请选择产品分类');
 
     setSaving(true);
     try {
@@ -312,20 +506,20 @@ function ProductFormModal({
         throw new Error(err.error || 'Failed to save');
       }
 
-      toast.success(isEdit ? 'Product updated' : 'Product created');
+      toast.success(isEdit ? '产品已更新' : '产品已创建');
       onSaved();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save product');
+      toast.error(e instanceof Error ? e.message : '保存失败');
     } finally {
       setSaving(false);
     }
   };
 
   const tabs = [
-    { key: 'general' as const, label: 'General' },
-    { key: 'descriptions' as const, label: 'Descriptions' },
-    { key: 'media' as const, label: 'Media & Files' },
-    { key: 'advanced' as const, label: 'Advanced' },
+    { key: 'general' as const, label: '基本信息' },
+    { key: 'descriptions' as const, label: '产品描述' },
+    { key: 'media' as const, label: '图片与视频' },
+    { key: 'advanced' as const, label: '技术参数' },
   ];
 
   const inputCls =
@@ -339,7 +533,7 @@ function ProductFormModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            {isEdit ? 'Edit Product' : 'Add Product'}
+            {isEdit ? '编辑产品' : '新增产品'}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
@@ -370,67 +564,71 @@ function ProductFormModal({
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Name (English) *</label>
+                  <label className={labelCls}>名称 (English) *</label>
                   <input className={inputCls} value={form.nameEn} onChange={(e) => set('nameEn', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Name (中文)</label>
+                  <label className={labelCls}>名称 (中文)</label>
                   <input className={inputCls} value={form.nameZh} onChange={(e) => set('nameZh', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Name (日本語)</label>
+                  <label className={labelCls}>名称 (日本語)</label>
                   <input className={inputCls} value={form.nameJa} onChange={(e) => set('nameJa', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Name (العربية)</label>
+                  <label className={labelCls}>名称 (العربية)</label>
                   <input className={inputCls} dir="rtl" value={form.nameAr} onChange={(e) => set('nameAr', e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className={labelCls}>SKU *</label>
+                  <label className={labelCls}>SKU编号 *</label>
                   <input className={inputCls} value={form.sku} onChange={(e) => set('sku', e.target.value)} placeholder="MDE-200HP-001" />
                 </div>
                 <div>
-                  <label className={labelCls}>Category *</label>
+                  <label className={labelCls}>产品分类 *</label>
                   <select className={inputCls} value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
-                    <option value="">Select category…</option>
+                    <option value="">选择分类…</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>{c.nameEn}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Status</label>
+                  <label className={labelCls}>状态</label>
                   <select className={inputCls} value={form.status} onChange={(e) => set('status', e.target.value)}>
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="archived">Archived</option>
+                    <option value="draft">草稿</option>
+                    <option value="published">已发布</option>
+                    <option value="archived">已归档</option>
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className={labelCls}>Price (USD)</label>
-                  <input type="number" step="0.01" min="0" className={inputCls} value={form.priceUsd} onChange={(e) => set('priceUsd', e.target.value)} />
+                  <label className={labelCls}>价格 (人民币/CNY)</label>
+                  <input type="number" step="0.01" min="0" className={inputCls} value={form.priceCny} onChange={(e) => setCnyPrice(e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>MOQ</label>
+                  <label className={labelCls}>价格 (USD) <span className="text-gray-400 font-normal">自动换算</span></label>
+                  <input type="number" step="0.01" min="0" className={`${inputCls} bg-gray-50 text-gray-500`} value={form.priceUsd} readOnly />
+                </div>
+                <div>
+                  <label className={labelCls}>最小起订量</label>
                   <input type="number" min="1" className={inputCls} value={form.moq} onChange={(e) => set('moq', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Lead Time (days)</label>
+                  <label className={labelCls}>交货周期 (天)</label>
                   <input type="number" min="0" className={inputCls} value={form.leadTimeDays} onChange={(e) => set('leadTimeDays', e.target.value)} />
                 </div>
               </div>
               <div className="flex items-center gap-6 pt-1">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.published} onChange={(e) => set('published', e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                  <span className="text-sm text-gray-700">Published</span>
+                  <span className="text-sm text-gray-700">已发布</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.featured} onChange={(e) => set('featured', e.target.checked)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                  <span className="text-sm text-gray-700">Featured</span>
+                  <span className="text-sm text-gray-700">推荐产品</span>
                 </label>
               </div>
             </>
@@ -440,10 +638,10 @@ function ProductFormModal({
           {activeTab === 'descriptions' && (
             <>
               {([
-                ['descEn', 'Description (English)'],
-                ['descZh', 'Description (中文)'],
-                ['descJa', 'Description (日本語)'],
-                ['descAr', 'Description (العربية)'],
+                ['descEn', '产品描述 (English)'],
+                ['descZh', '产品描述 (中文)'],
+                ['descJa', '产品描述 (日本語)'],
+                ['descAr', '产品描述 (العربية)'],
               ] as const).map(([key, label]) => (
                 <div key={key}>
                   <label className={labelCls}>{label}</label>
@@ -462,19 +660,131 @@ function ProductFormModal({
           {/* Media Tab */}
           {activeTab === 'media' && (
             <>
+              {/* --- 批量图片上传 --- */}
               <div>
-                <label className={labelCls}>Images (JSON array of URLs)</label>
-                <textarea rows={3} className={`${inputCls} font-mono text-xs`} value={form.images} onChange={(e) => set('images', e.target.value)} placeholder='["https://example.com/img1.jpg"]' />
+                <label className={labelCls}>
+                  <ImagePlus className="w-3.5 h-3.5 inline mr-1" />
+                  产品图片（批量上传）
+                </label>
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    dragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <ImagePlus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">拖拽图片到此处，或点击浏览</p>
+                  <p className="text-xs text-gray-400">支持 jpg、jpeg、png、webp、svg，单张最大10MB</p>
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="mt-3 px-4 py-1.5 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700"
+                  >
+                    选择图片
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.webp,.svg"
+                    className="hidden"
+                    onChange={(e) => e.target.files && uploadFiles(e.target.files)}
+                  />
+                </div>
+
+                {/* Upload progress */}
+                {uploadingFiles.filter((f) => f.status === 'uploading').length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {uploadingFiles.filter((f) => f.status === 'uploading').map((f) => (
+                      <div key={f.id} className="flex items-center gap-2 text-xs text-gray-500">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="truncate">{f.file.name}</span>
+                        <span>上传中...</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Image thumbnails grid */}
+                {imageList.length > 0 && (
+                  <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {imageList.map((url, idx) => (
+                      <div key={`${url}-${idx}`} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        <Image src={url} alt={`产品图片 ${idx + 1}`} fill className="object-cover" sizes="100px" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => optimizeImage(url, idx)}
+                            className="p-1 bg-white/90 rounded text-xs text-primary-700 hover:bg-white"
+                            title="自动优化为适合船艇设备跨境电商的专业图片"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="p-1 bg-white/90 rounded text-xs text-red-600 hover:bg-white"
+                            title="删除图片"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <span className="absolute bottom-0.5 left-0.5 bg-black/60 text-white text-[10px] px-1 rounded">{idx + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* AI optimization hint */}
+                {imageList.length > 0 && (
+                  <p className="mt-1.5 text-xs text-gray-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    点击图片上的 ✨ 按钮：AI优化图片 — 自动优化为适合船艇设备跨境电商的专业图片
+                  </p>
+                )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Video URL</label>
-                  <input className={inputCls} value={form.videoUrl} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://youtube.com/..." />
+
+              {/* --- 视频上传 --- */}
+              <div>
+                <label className={labelCls}>
+                  <Film className="w-3.5 h-3.5 inline mr-1" />
+                  视频（本地上传或外部链接）
+                </label>
+                <div className="flex gap-3 items-start">
+                  <div className="flex-1">
+                    <input
+                      className={inputCls}
+                      value={form.videoUrl}
+                      onChange={(e) => set('videoUrl', e.target.value)}
+                      placeholder="视频URL，例如: https://youtube.com/... 或上传本地视频"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={uploadingVideo}
+                    className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    {uploadingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    上传视频
+                  </button>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept=".mp4,.webm"
+                    className="hidden"
+                    onChange={handleVideoUpload}
+                  />
                 </div>
-                <div>
-                  <label className={labelCls}>PDF URL</label>
-                  <input className={inputCls} value={form.pdfUrl} onChange={(e) => set('pdfUrl', e.target.value)} placeholder="https://example.com/spec.pdf" />
-                </div>
+                <p className="mt-1 text-xs text-gray-400">支持 mp4、webm 格式，最大50MB</p>
+              </div>
+
+              {/* --- PDF --- */}
+              <div>
+                <label className={labelCls}>PDF 文档</label>
+                <input className={inputCls} value={form.pdfUrl} onChange={(e) => set('pdfUrl', e.target.value)} placeholder="https://example.com/spec.pdf" />
               </div>
             </>
           )}
@@ -482,16 +792,16 @@ function ProductFormModal({
           {/* Advanced Tab */}
           {activeTab === 'advanced' && (
             <div>
-              <label className={labelCls}>Specs JSON</label>
+              <label className={labelCls}>技术参数 (JSON)</label>
               <textarea
                 rows={8}
                 className={`${inputCls} font-mono text-xs`}
                 value={form.specsJson}
                 onChange={(e) => set('specsJson', e.target.value)}
-                placeholder='{"power": "200HP", "weight": "500kg"}'
+                placeholder='{"功率": "200HP", "重量": "500kg"}'
               />
               <p className="mt-1 text-xs text-gray-400">
-                Enter product specifications as a JSON object. Each key-value pair will be shown in the specs table.
+                输入JSON格式的产品技术参数，每个键值对将显示在参数表中。
               </p>
             </div>
           )}
@@ -504,7 +814,7 @@ function ProductFormModal({
             disabled={saving}
             className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            Cancel
+            取消
           </button>
           <button
             onClick={handleSubmit}
@@ -512,7 +822,7 @@ function ProductFormModal({
             className="px-5 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isEdit ? 'Save Changes' : 'Create Product'}
+            {isEdit ? '保存更改' : '创建产品'}
           </button>
         </div>
       </div>
@@ -544,12 +854,12 @@ function BatchUploadModal({
     if (!text.trim()) return;
     try {
       const data = JSON.parse(text);
-      if (!Array.isArray(data)) throw new Error('JSON must be an array of products');
-      if (data.length === 0) throw new Error('Array is empty');
-      if (data.length > 500) throw new Error('Maximum 500 products per batch');
+      if (!Array.isArray(data)) throw new Error('JSON必须是产品数组');
+      if (data.length === 0) throw new Error('数组为空');
+      if (data.length > 500) throw new Error('每批最多500个产品');
       setParsed(data);
     } catch (e: unknown) {
-      setParseError(e instanceof Error ? e.message : 'Invalid JSON');
+      setParseError(e instanceof Error ? e.message : '无效的JSON');
     }
   };
 
@@ -561,7 +871,7 @@ function BatchUploadModal({
     reader.readAsText(file);
   };
 
-  const downloadTemplate = () => {
+  const downloadJsonTemplate = () => {
     const blob = new Blob([JSON.stringify(BATCH_TEMPLATE, null, 2)], {
       type: 'application/json',
     });
@@ -569,6 +879,18 @@ function BatchUploadModal({
     const a = document.createElement('a');
     a.href = url;
     a.download = 'product-batch-template.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCsvTemplate = () => {
+    const BOM = '\uFEFF';
+    const csv = BOM + CSV_TEMPLATE_HEADERS.join(',') + '\n' + CSV_TEMPLATE_EXAMPLE.map((v) => `"${v}"`).join(',') + '\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '产品导入模板.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -583,19 +905,19 @@ function BatchUploadModal({
         body: JSON.stringify({ products: parsed }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Batch upload failed');
+      if (!res.ok) throw new Error(data.error || '批量导入失败');
 
       const errCount = data.errors?.length ?? 0;
       if (errCount > 0) {
-        toast.success(`Created ${data.createdCount} of ${data.totalSubmitted} products`);
-        toast.error(`${errCount} product(s) failed — check console for details`);
+        toast.success(`成功创建 ${data.createdCount} / ${data.totalSubmitted} 个产品`);
+        toast.error(`${errCount} 个产品导入失败 — 请查看控制台`);
         console.table(data.errors);
       } else {
-        toast.success(`All ${data.createdCount} products created successfully`);
+        toast.success(`全部 ${data.createdCount} 个产品创建成功`);
       }
       onDone();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Batch upload failed');
+      toast.error(e instanceof Error ? e.message : '批量导入失败');
     } finally {
       setUploading(false);
     }
@@ -608,7 +930,7 @@ function BatchUploadModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Batch Upload Products
+            批量导入产品
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
@@ -616,21 +938,39 @@ function BatchUploadModal({
         </div>
 
         <div className="px-6 py-5 space-y-4">
+          {/* Instructions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+            <p className="font-medium mb-1">📋 使用说明</p>
+            <ol className="list-decimal list-inside space-y-0.5 text-xs text-blue-700">
+              <li>下载CSV或JSON模板文件</li>
+              <li>按模板格式填写产品信息</li>
+              <li>将JSON数据粘贴到下方文本框，或上传JSON文件</li>
+              <li>确认产品列表后点击&quot;开始导入&quot;</li>
+            </ol>
+          </div>
+
           {/* Actions row */}
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={downloadTemplate}
+              onClick={downloadCsvTemplate}
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              下载模板 (CSV)
+            </button>
+            <button
+              onClick={downloadJsonTemplate}
               className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Download Template
+              下载模板 (JSON)
             </button>
             <button
               onClick={() => fileRef.current?.click()}
               className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
               <FileJson className="w-4 h-4" />
-              Upload JSON File
+              上传JSON文件
             </button>
             <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
           </div>
@@ -638,7 +978,7 @@ function BatchUploadModal({
           {/* JSON textarea */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Paste JSON array or upload a file above
+              粘贴JSON产品数组，或使用上方按钮上传文件
             </label>
             <textarea
               rows={10}
@@ -661,14 +1001,14 @@ function BatchUploadModal({
             <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
               <div className="flex items-center gap-2 text-sm font-medium text-green-800 mb-2">
                 <Check className="w-4 h-4" />
-                {parsed.length} product(s) ready to upload
+                {parsed.length} 个产品已就绪
               </div>
               <div className="max-h-40 overflow-y-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-left text-green-700">
                       <th className="pr-3 py-1">#</th>
-                      <th className="pr-3 py-1">Name</th>
+                      <th className="pr-3 py-1">名称</th>
                       <th className="pr-3 py-1">SKU</th>
                     </tr>
                   </thead>
@@ -676,14 +1016,14 @@ function BatchUploadModal({
                     {parsed.slice(0, 20).map((p, i) => (
                       <tr key={i}>
                         <td className="pr-3 py-0.5">{i + 1}</td>
-                        <td className="pr-3 py-0.5 truncate max-w-[200px]">{String(p.nameEn || '—')}</td>
+                        <td className="pr-3 py-0.5 truncate max-w-[200px]">{String(p.nameZh || p.nameEn || '—')}</td>
                         <td className="pr-3 py-0.5 font-mono">{String(p.sku || '—')}</td>
                       </tr>
                     ))}
                     {parsed.length > 20 && (
                       <tr>
                         <td colSpan={3} className="py-1 text-green-600 italic">
-                          …and {parsed.length - 20} more
+                          …还有 {parsed.length - 20} 个产品
                         </td>
                       </tr>
                     )}
@@ -701,7 +1041,7 @@ function BatchUploadModal({
             disabled={uploading}
             className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            Cancel
+            取消
           </button>
           <button
             onClick={handleUpload}
@@ -709,7 +1049,7 @@ function BatchUploadModal({
             className="px-5 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
           >
             {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Upload {parsed ? `${parsed.length} Product(s)` : ''}
+            开始导入 {parsed ? `${parsed.length} 个产品` : ''}
           </button>
         </div>
       </div>
@@ -793,9 +1133,9 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, ...updated } : x)));
-      toast.success(updated.published ? 'Product published' : 'Product unpublished');
+      toast.success(updated.published ? '产品已发布' : '产品已取消发布');
     } catch {
-      toast.error('Failed to toggle publish');
+      toast.error('操作失败');
     } finally {
       setActionId(null);
     }
@@ -812,9 +1152,9 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, ...updated } : x)));
-      toast.success(updated.featured ? 'Marked as featured' : 'Removed from featured');
+      toast.success(updated.featured ? '已设为推荐' : '已取消推荐');
     } catch {
-      toast.error('Failed to toggle featured');
+      toast.error('操作失败');
     } finally {
       setActionId(null);
     }
@@ -831,9 +1171,9 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, ...updated } : x)));
-      toast.success(`Status changed to ${newStatus}`);
+      toast.success(`状态已更改为${STATUS_LABELS[newStatus] ?? newStatus}`);
     } catch {
-      toast.error('Failed to change status');
+      toast.error('状态更改失败');
     } finally {
       setActionId(null);
     }
@@ -848,11 +1188,11 @@ export default function ProductsPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to delete');
       }
-      toast.success('Product deleted');
+      toast.success('产品已删除');
       setDeleteProduct(null);
       fetchProducts();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to delete');
+      toast.error(e instanceof Error ? e.message : '删除失败');
     } finally {
       setDeleting(false);
     }
@@ -866,7 +1206,7 @@ export default function ProductsPage() {
       const full = await res.json();
       setFormProduct(full);
     } catch {
-      toast.error('Failed to load product details');
+      toast.error('加载产品详情失败');
     }
   };
 
@@ -874,26 +1214,26 @@ export default function ProductsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+        <h1 className="text-2xl font-bold text-gray-900">产品管理</h1>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={() => setShowBatch(true)}
             className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">Batch Upload</span>
+            <span className="hidden sm:inline">批量导入</span>
           </button>
           <button
             onClick={() => setFormProduct(null)}
             className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Add Product
+            新增产品
           </button>
           <button
             onClick={fetchProducts}
             className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-            title="Refresh"
+            title="刷新"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -905,15 +1245,15 @@ export default function ProductsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Filter className="w-4 h-4" />
-            Filters
+            筛选
           </div>
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">搜索</label>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Name, SKU…"
+                  placeholder="名称、SKU…"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -925,29 +1265,29 @@ export default function ProductsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">产品分类</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="">All Categories</option>
+                <option value="">全部分类</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.nameEn}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">状态</label>
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="">All Statuses</option>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-                <option value="archived">Archived</option>
+                <option value="">全部状态</option>
+                <option value="published">已发布</option>
+                <option value="draft">草稿</option>
+                <option value="archived">已归档</option>
               </select>
             </div>
           </div>
@@ -976,13 +1316,13 @@ export default function ProductsPage() {
       {!loading && products.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm mb-4">No products found</p>
+          <p className="text-gray-500 text-sm mb-4">暂无产品</p>
           <button
             onClick={() => setFormProduct(null)}
             className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 inline-flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Add Your First Product
+            添加第一个产品
           </button>
         </div>
       )}
@@ -994,13 +1334,13 @@ export default function ProductsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Featured</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">产品</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU编号</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">分类</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">价格</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">状态</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">推荐</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -1037,8 +1377,8 @@ export default function ProductsPage() {
                       {/* Status badge + quick change */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ring-inset capitalize ${STATUS_COLORS[product.status] ?? STATUS_COLORS.draft}`}>
-                            {product.status}
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ring-1 ring-inset ${STATUS_COLORS[product.status] ?? STATUS_COLORS.draft}`}>
+                            {STATUS_LABELS[product.status] ?? product.status}
                           </span>
                           <div className="relative inline-flex items-center">
                             <select
@@ -1046,11 +1386,11 @@ export default function ProductsPage() {
                               disabled={busy}
                               onChange={(e) => changeStatus(product, e.target.value)}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
-                              title="Change status"
+                              title="更改状态"
                             >
-                              <option value="draft">Draft</option>
-                              <option value="published">Published</option>
-                              <option value="archived">Archived</option>
+                              <option value="draft">草稿</option>
+                              <option value="published">已发布</option>
+                              <option value="archived">已归档</option>
                             </select>
                             <ChevronDown className="w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                           </div>
@@ -1066,7 +1406,7 @@ export default function ProductsPage() {
                               ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'
                               : 'text-gray-300 hover:text-amber-400 hover:bg-gray-100'
                           }`}
-                          title={product.featured ? 'Remove featured' : 'Mark as featured'}
+                          title={product.featured ? '取消推荐' : '设为推荐'}
                         >
                           {product.featured ? <Star className="w-4 h-4 fill-current" /> : <StarOff className="w-4 h-4" />}
                         </button>
@@ -1082,14 +1422,14 @@ export default function ProductsPage() {
                                 ? 'text-green-600 hover:bg-green-50'
                                 : 'text-gray-400 hover:bg-gray-100'
                             }`}
-                            title={product.published ? 'Unpublish' : 'Publish'}
+                            title={product.published ? '取消发布' : '发布'}
                           >
                             {product.published ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                           </button>
                           <button
                             onClick={() => openEdit(product)}
                             className="p-1.5 rounded-md text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                            title="Edit"
+                            title="编辑"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
@@ -1098,14 +1438,14 @@ export default function ProductsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                            title="View on site"
+                            title="查看"
                           >
                             <Eye className="w-4 h-4" />
                           </a>
                           <button
                             onClick={() => setDeleteProduct(product)}
                             className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete"
+                            title="删除"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1122,7 +1462,7 @@ export default function ProductsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
               <p className="text-sm text-gray-500">
-                Page {page} of {totalPages} ({total} total)
+                Page {page} of {totalPages} ({total} 个产品)
               </p>
               <div className="flex items-center gap-2">
                 <button

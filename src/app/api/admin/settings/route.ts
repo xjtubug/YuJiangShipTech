@@ -2,8 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const key = request.nextUrl.searchParams.get('key');
+    if (key) {
+      const setting = await prisma.siteSettings.findUnique({ where: { key } });
+      return NextResponse.json({ key, value: setting?.value ?? null });
+    }
+
     const settings = await prisma.siteSettings.findMany({
       orderBy: { key: 'asc' },
     });

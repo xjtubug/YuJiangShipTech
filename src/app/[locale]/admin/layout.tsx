@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import {
@@ -18,18 +18,30 @@ import {
   UsersRound,
   Globe,
   PenTool,
+  Bell,
+  Check,
 } from 'lucide-react';
 
+interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  createdAt: string;
+}
+
 const navItems = [
-  { href: '', label: 'Dashboard', labelZh: '仪表盘', icon: LayoutDashboard },
-  { href: '/visitors', label: 'Visitors', labelZh: '访客', icon: Users },
-  { href: '/inquiries', label: 'Inquiries', labelZh: '询价', icon: MessageSquare },
-  { href: '/products', label: 'Products', labelZh: '产品', icon: Package },
-  { href: '/reports', label: 'Reports', labelZh: '报告', icon: FileText },
-  { href: '/experts', label: 'Experts', labelZh: '专家', icon: UserCheck },
-  { href: '/customers', label: 'Customers', labelZh: '客户', icon: UsersRound },
-  { href: '/cms', label: 'CMS', labelZh: '内容管理', icon: PenTool },
-  { href: '/settings', label: 'Settings', labelZh: '设置', icon: Settings },
+  { href: '', label: 'Dashboard', labelZh: '仪表盘', icon: LayoutDashboard, badge: '' },
+  { href: '/visitors', label: 'Visitors', labelZh: '访客管理', icon: Users, badge: 'visitors' },
+  { href: '/inquiries', label: 'Inquiries', labelZh: '询价管理', icon: MessageSquare, badge: 'inquiries' },
+  { href: '/products', label: 'Products', labelZh: '产品管理', icon: Package, badge: '' },
+  { href: '/reports', label: 'Reports', labelZh: '数据报告', icon: FileText, badge: '' },
+  { href: '/experts', label: 'Experts', labelZh: '专家管理', icon: UserCheck, badge: '' },
+  { href: '/customers', label: 'Customers', labelZh: '客户管理', icon: UsersRound, badge: '' },
+  { href: '/cms', label: 'CMS', labelZh: '内容管理', icon: PenTool, badge: '' },
+  { href: '/settings', label: 'Settings', labelZh: '系统设置', icon: Settings, badge: '' },
 ];
 
 export default function AdminLayout({
@@ -38,11 +50,52 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const params = useParams();
   const router = useRouter();
   const locale = (params.locale as string) || 'en';
   const basePath = `/${locale}/admin`;
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        setBadges(data.badges || {});
+        setNotifications(data.recent || []);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const totalUnread = Object.values(badges).reduce((a, b) => a + b, 0);
+
+  const markAllRead = async () => {
+    try {
+      await fetch('/api/admin/notifications/read-all', { method: 'POST' });
+      setBadges({});
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch {}
+  };
 
   const isActive = (href: string) => {
     const fullPath = `${basePath}${href}`;
@@ -64,8 +117,8 @@ export default function AdminLayout({
           <Ship className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-white font-bold text-sm leading-tight">YuJiang</h1>
-          <p className="text-primary-300 text-xs">ShipTechnology</p>
+          <h1 className="text-white font-bold text-sm leading-tight">裕江船舶</h1>
+          <p className="text-primary-300 text-xs">管理系统</p>
         </div>
       </div>
 
@@ -86,7 +139,12 @@ export default function AdminLayout({
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              {locale === 'zh' ? item.labelZh : item.label}
+              {item.labelZh || item.label}
+              {item.badge && badges[item.badge] > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {badges[item.badge] > 99 ? '99+' : badges[item.badge]}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -99,7 +157,7 @@ export default function AdminLayout({
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-300 hover:bg-primary-800 hover:text-white transition-colors"
         >
           <ExternalLink className="w-5 h-5 flex-shrink-0" />
-          {locale === 'zh' ? '返回网站' : 'Back to Site'}
+          返回网站
         </Link>
       </div>
     </nav>
@@ -142,12 +200,56 @@ export default function AdminLayout({
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {locale === 'zh' ? '管理面板' : 'Admin Panel'}
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-800">管理面板</h2>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Notification Bell */}
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                    {totalUnread > 99 ? '99+' : totalUnread}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-gray-800">通知</h3>
+                    {totalUnread > 0 && (
+                      <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                        <Check className="w-3 h-3" /> 全部已读
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-gray-400 text-sm">暂无通知</div>
+                    ) : (
+                      notifications.map((n) => (
+                        <Link
+                          key={n.id}
+                          href={n.link ? `/${locale}/admin${n.link.replace('/admin', '')}` : '#'}
+                          onClick={() => setNotifOpen(false)}
+                          className={`block px-4 py-3 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-blue-50/50' : ''}`}
+                        >
+                          <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('zh-CN')}</p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={toggleLocale}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
@@ -157,9 +259,7 @@ export default function AdminLayout({
               {locale === 'zh' ? 'EN' : '中文'}
             </button>
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-700">
-                {locale === 'zh' ? '管理员' : 'Administrator'}
-              </p>
+              <p className="text-sm font-medium text-gray-700">管理员</p>
               <p className="text-xs text-gray-400">admin@yujiangshiptech.com</p>
             </div>
             <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">

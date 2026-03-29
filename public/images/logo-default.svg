@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <rect width="200" height="60" rx="8" fill="white"/>
+  <path d="M15 45 L30 15 L45 45 L38 45 L30 25 L22 45Z" fill="#F97316"/>
+  <path d="M30 20 C30 20 50 30 48 42 C46 50 32 48 30 45 C28 48 14 50 12 42 C10 30 30 20 30 20Z" fill="#1E3A5F" opacity="0.9"/>
+  <text x="58" y="32" font-family="Arial,sans-serif" font-weight="800" font-size="24" fill="#F97316">YuJiang</text>
+  <text x="58" y="50" font-family="Arial,sans-serif" font-weight="600" font-size="14" fill="#1E3A5F">ShipTechnology</text>
+</svg>

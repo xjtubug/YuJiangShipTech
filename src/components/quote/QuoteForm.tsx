@@ -80,6 +80,8 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [attachmentName, setAttachmentName] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [inquiryRef, setInquiryRef] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate from inquiry store
@@ -172,6 +174,9 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
     if (!validate()) return;
 
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     try {
       const payload = {
         ...companyInfo,
@@ -193,26 +198,34 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) throw new Error('Failed');
 
       const data = await res.json();
 
-      toast.success(
-        `${t('submitSuccess')}${data.inquiryNumber ? `\nRef: ${data.inquiryNumber}` : ''}`,
-        { duration: 8000 }
-      );
+      toast.success(locale === 'zh' ? '提交成功！' : 'Submitted!', { duration: 3000 });
+      setInquiryRef(data.inquiryNumber || '');
+      setSubmitted(true);
 
       // Clear form and store
       setCompanyInfo({ companyName: '', contactName: '', email: '', phone: '', country: '' });
       setItems([{ productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '' }]);
       setTechRequirements('');
       setMessage('');
+      setAttachmentUrl('');
+      setAttachmentName('');
       inquiryStore.clear();
-    } catch {
-      toast.error(t('submitError'));
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.error(locale === 'zh' ? '请求超时，请检查网络后重试' : 'Request timed out. Please try again.');
+      } else {
+        toast.error(t('submitError'));
+      }
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
@@ -220,6 +233,24 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   const inputClass =
     'w-full px-4 py-3 rounded-lg border border-primary-200 bg-white text-primary-800 placeholder-primary-300 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent transition-colors';
   const labelClass = 'block text-sm font-semibold text-primary-700 mb-1.5';
+
+  if (submitted) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <FileCheck className="w-10 h-10 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">{locale === 'zh' ? '询价已成功提交！' : 'Inquiry Submitted Successfully!'}</h2>
+        {inquiryRef && (
+          <p className="text-lg text-secondary-600 font-semibold mb-2">{locale === 'zh' ? '参考编号' : 'Reference'}: {inquiryRef}</p>
+        )}
+        <p className="text-gray-500 mb-8 max-w-md mx-auto">{locale === 'zh' ? '我们的销售团队将在24小时内与您联系。' : 'Our sales team will contact you within 24 hours.'}</p>
+        <button type="button" onClick={() => { setSubmitted(false); setInquiryRef(''); }} className="btn-primary gap-2">
+          <Plus className="w-4 h-4" />{locale === 'zh' ? '提交新询价' : 'Submit New Inquiry'}
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

@@ -27,7 +27,7 @@ import ProductSpecs from './ProductSpecs';
 import ProductReviews from './ProductReviews';
 import ProductCard from './ProductCard';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
-import { formatPrice, convertCurrency, cn } from '@/lib/utils';
+import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
 
 interface Review {
   id: string;
@@ -164,7 +164,7 @@ export default function ProductDetail({
   const productName = getLocalizedField(product, 'name', effectiveLocale);
   const productDesc = getLocalizedField(product, 'desc', effectiveLocale);
   const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
-  const convertedPrice = convertCurrency(product.priceUsd, currency);
+  const convertedPrice = convertFromUsd(product.priceUsd, currency);
   const CategoryIcon = getCategoryIcon(product.category.slug);
 
   // Parse images array
@@ -415,7 +415,7 @@ export default function ProductDetail({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <ProductReviews reviews={product.reviews} />
+              <ProductReviews reviews={product.reviews} slug={product.slug} />
             </motion.div>
           )}
 

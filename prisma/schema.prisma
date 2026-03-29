@@ -37,6 +37,7 @@ model Product {
   descJa          String
   descAr          String
   specsJson       String    @default("{}") // JSON technical specs
+  priceCny        Float     @default(0)    // 人民币基准价格
   priceUsd        Float     @default(0)
   moq             Int       @default(1)
   leadTimeDays    Int       @default(30)
@@ -50,6 +51,7 @@ model Product {
   category        Category  @relation(fields: [categoryId], references: [id])
   reviews         Review[]
   expertReviews   ExpertReview[]
+  customerComments CustomerComment[]
   inquiryItems    InquiryItem[]
   pageViews       PageView[]
   createdAt       DateTime  @default(now())
@@ -67,6 +69,23 @@ model Review {
   contentEn   String
   contentZh   String   @default("")
   avatar      String?
+  images      String   @default("[]") // JSON array of image URLs
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ─── Customer Comments (商品留言) ─────────────────────────────
+model CustomerComment {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  name        String
+  email       String
+  company     String?
+  country     String?
+  content     String
+  images      String   @default("[]") // JSON array of image URLs
+  rating      Int      @default(5)
   approved    Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
@@ -89,8 +108,11 @@ model Inquiry {
   utmMedium       String?
   utmCampaign     String?
   items           InquiryItem[]
+  followUps       InquiryFollowUp[]
   visitorId       String?
   visitor         Visitor?      @relation(fields: [visitorId], references: [id])
+  customerId      String?
+  customer        Customer?     @relation(fields: [customerId], references: [id])
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -105,6 +127,17 @@ model InquiryItem {
   quantity    Int      @default(1)
   unit        String   @default("pcs")
   specs       String?
+  createdAt   DateTime @default(now())
+}
+
+// ─── Inquiry Follow-up (询价跟进) ────────────────────────────
+model InquiryFollowUp {
+  id          String   @id @default(uuid())
+  inquiryId   String
+  inquiry     Inquiry  @relation(fields: [inquiryId], references: [id])
+  action      String   // call, email, meeting, note, quote_sent
+  content     String
+  createdBy   String   @default("admin")
   createdAt   DateTime @default(now())
 }
 
@@ -211,6 +244,8 @@ model ExpertReview {
   expert      AdminUser @relation(fields: [expertId], references: [id])
   content     String
   rating      Int       @default(5)
+  images      String    @default("[]") // JSON array of image URLs
+  videoUrl    String?
   createdAt   DateTime  @default(now())
 }
 
@@ -250,5 +285,43 @@ model NewsletterSubscriber {
   name        String?
   source      String?  // footer, popup, manual
   active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ─── Customer CRM ───────────────────────────────────────────
+model Customer {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String
+  company     String?
+  phone       String?
+  country     String?
+  tags        String   @default("[]") // JSON array of tag strings
+  source      String   @default("inquiry") // inquiry, manual, newsletter
+  notes       String?
+  inquiries   Inquiry[]
+  followUps   CustomerFollowUp[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CustomerFollowUp {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  action      String   // call, email, meeting, note, order
+  content     String
+  createdBy   String   @default("admin")
+  createdAt   DateTime @default(now())
+}
+
+// ─── Notification System (通知系统) ──────────────────────────
+model Notification {
+  id          String   @id @default(uuid())
+  type        String   // new_inquiry, new_visitor, new_comment, system
+  title       String
+  message     String
+  link        String?  // URL to related resource
+  read        Boolean  @default(false)
   createdAt   DateTime @default(now())
 }

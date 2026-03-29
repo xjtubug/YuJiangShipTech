@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
 import { Package, ShoppingCart, ArrowRight, Star } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore } from '@/lib/store';
-import { formatPrice, convertCurrency } from '@/lib/utils';
+import { formatPrice, convertFromUsd } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -110,7 +110,7 @@ export default function FeaturedProducts({ products }: { products: Product[] }) 
 
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-lg font-bold text-accent-600">
-                    {formatPrice(convertCurrency(product.priceUsd, currency), currency)}
+                    {formatPrice(convertFromUsd(product.priceUsd, currency), currency)}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mb-4">

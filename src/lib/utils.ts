@@ -6,12 +6,12 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   AED: 'د.إ',
 };
 
-const EXCHANGE_RATES: Record<string, number> = {
-  USD: 1,
-  EUR: 0.92,
-  CNY: 7.24,
-  JPY: 149.5,
-  AED: 3.67,
+const EXCHANGE_RATES_FROM_CNY: Record<string, number> = {
+  CNY: 1,
+  USD: 0.138,
+  EUR: 0.127,
+  JPY: 20.65,
+  AED: 0.507,
 };
 
 export function formatPrice(price: number, currency: string): string {
@@ -24,10 +24,16 @@ export function formatPrice(price: number, currency: string): string {
   return `${symbol}${formatted}`;
 }
 
-export function convertCurrency(priceUsd: number, targetCurrency: string): number {
-  const rate = EXCHANGE_RATES[targetCurrency];
-  if (!rate) return priceUsd;
-  return Math.round(priceUsd * rate * 100) / 100;
+export function convertCurrency(priceCny: number, targetCurrency: string): number {
+  const rate = EXCHANGE_RATES_FROM_CNY[targetCurrency];
+  if (!rate) return priceCny;
+  return Math.round(priceCny * rate * 100) / 100;
+}
+
+export function convertFromUsd(priceUsd: number, targetCurrency: string): number {
+  const usdToCny = 7.24;
+  const cny = priceUsd * usdToCny;
+  return convertCurrency(cny, targetCurrency);
 }
 
 export function generateInquiryNumber(): string {

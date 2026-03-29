@@ -68,6 +68,49 @@ export async function POST(request: NextRequest) {
       include: { items: true },
     });
 
+    // Auto-create or link customer
+    try {
+      const customer = await prisma.customer.upsert({
+        where: { email },
+        update: {
+          name: contactName,
+          company: companyName,
+          phone: phone ?? undefined,
+          country: country ?? undefined,
+        },
+        create: {
+          email,
+          name: contactName,
+          company: companyName,
+          phone: phone ?? null,
+          country: country ?? null,
+          source: 'inquiry',
+        },
+      });
+
+      // Link customer to inquiry
+      await prisma.inquiry.update({
+        where: { id: inquiry.id },
+        data: { customerId: customer.id },
+      });
+    } catch (e) {
+      console.error('Failed to upsert customer:', e);
+    }
+
+    // Create notification
+    try {
+      await prisma.notification.create({
+        data: {
+          type: 'new_inquiry',
+          title: `新询价 ${inquiryNumber}`,
+          message: `${contactName} (${companyName}) 提交了新的询价`,
+          link: `/admin/inquiries`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to create notification:', e);
+    }
+
     // Try to send email notifications (don't fail the request on error)
     try {
       await sendInquiryNotification({

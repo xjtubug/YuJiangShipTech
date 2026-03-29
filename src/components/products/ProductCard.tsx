@@ -16,7 +16,7 @@ import {
   GitCompareArrows,
 } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
-import { formatPrice, convertCurrency, cn } from '@/lib/utils';
+import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
 
 interface ProductData {
   id: string;
@@ -86,7 +86,7 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
   const productName = getLocalizedField(product, 'name', effectiveLocale);
   const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
 
-  const convertedPrice = convertCurrency(product.priceUsd, currency);
+  const convertedPrice = convertFromUsd(product.priceUsd, currency);
   const CategoryIcon = getCategoryIcon(product.category.slug);
 
   const handleAddToInquiry = (e: React.MouseEvent) => {

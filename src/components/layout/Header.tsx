@@ -32,6 +32,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [currOpen, setCurrOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   const langRef = useRef<HTMLDivElement>(null);
   const currRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,15 @@ export default function Header() {
     { href: '/contact', label: t('contact') },
     { href: '/quote', label: t('quote') },
   ];
+
+  useEffect(() => {
+    fetch('/api/admin/settings?key=company_logo')
+      .then(res => res.json())
+      .then(data => {
+        if (data.value) setLogoUrl(data.value);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -104,13 +114,15 @@ export default function Header() {
         <div className="container-wide">
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-0.5 shrink-0">
-              <span className="text-2xl md:text-3xl font-extrabold text-accent-500">
-                YuJiang
-              </span>
-              <span className="text-2xl md:text-3xl font-extrabold text-primary-700">
-                ShipTech
-              </span>
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              {logoUrl ? (
+                <img src={logoUrl} alt="YuJiang ShipTech" className="h-9 md:h-12 w-auto object-contain" />
+              ) : (
+                <>
+                  <span className="text-2xl md:text-3xl font-extrabold text-accent-500">YuJiang</span>
+                  <span className="text-2xl md:text-3xl font-extrabold text-primary-700">ShipTech</span>
+                </>
+              )}
             </Link>
 
             {/* Desktop nav */}
@@ -284,11 +296,17 @@ export default function Header() {
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <Link
                   href="/"
-                  className="flex items-center gap-0.5"
+                  className="flex items-center gap-2 shrink-0"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <span className="text-xl font-extrabold text-accent-500">YuJiang</span>
-                  <span className="text-xl font-extrabold text-primary-700">Ship&nbsp;Tech</span>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="YuJiang ShipTech" className="h-8 w-auto object-contain" />
+                  ) : (
+                    <>
+                      <span className="text-xl font-extrabold text-accent-500">YuJiang</span>
+                      <span className="text-xl font-extrabold text-primary-700">ShipTech</span>
+                    </>
+                  )}
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}

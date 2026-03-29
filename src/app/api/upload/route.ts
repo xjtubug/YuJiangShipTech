@@ -4,10 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE_DEFAULT = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE_VIDEO = 50 * 1024 * 1024; // 50MB for video files
+
+const VIDEO_EXTENSIONS = new Set(["mp4", "webm"]);
 
 const ALLOWED_EXTENSIONS = new Set([
-  "pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "zip",
+  "pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "svg", "webp", "gif", "zip",
+  "mp4", "webm",
 ]);
 
 function getExtension(filename: string): string {
@@ -27,19 +31,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: `File too large. Maximum size is 10MB` },
-        { status: 400 }
-      );
-    }
-
     const ext = getExtension(file.name);
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       return NextResponse.json(
         {
           error: `File type '.${ext}' not allowed. Accepted: ${Array.from(ALLOWED_EXTENSIONS).join(", ")}`,
         },
+        { status: 400 }
+      );
+    }
+
+    const maxSize = VIDEO_EXTENSIONS.has(ext) ? MAX_SIZE_VIDEO : MAX_SIZE_DEFAULT;
+    const maxLabel = VIDEO_EXTENSIONS.has(ext) ? "50MB" : "10MB";
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${maxLabel}` },
         { status: 400 }
       );
     }

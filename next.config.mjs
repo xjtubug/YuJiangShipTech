@@ -1,6 +1,6 @@
-import createNextIntlPlugin from 'next-intl/plugin';
+import createNextIntlPlugin from 'next-intl/plugin'
 
-const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,15 +8,15 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'via.placeholder.com' },
+      { protocol: 'https', hostname: 'via.placeholder.com' }
     ],
-    formats: ['image/avif', 'image/webp'],
+    formats: ['image/avif', 'image/webp']
   },
   experimental: {
-    serverComponentsExternalPackages: ['geoip-lite'],
+    serverComponentsExternalPackages: ['geoip-lite']
   },
   compress: true,
-  poweredByHeader: false,
-};
+  poweredByHeader: false
+}
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(nextConfig)

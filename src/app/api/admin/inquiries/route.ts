@@ -13,13 +13,17 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
 
+    const includeFollowUps = searchParams.get('includeFollowUps') === 'true';
+
     const [inquiries, total] = await Promise.all([
       prisma.inquiry.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { items: true },
+        include: includeFollowUps
+          ? { items: true, followUps: { orderBy: { createdAt: 'desc' } } }
+          : { items: true },
       }),
       prisma.inquiry.count({ where }),
     ]);
