@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Award, Download, X, Shield, CalendarDays, Building2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface Certificate {
   id: string;
@@ -63,9 +64,11 @@ export default function CertificatesGrid({ certificates, locale }: Props) {
             {/* Certificate Image / Icon */}
             <div className="w-full aspect-[3/4] rounded-lg bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-200 flex items-center justify-center mb-4 relative overflow-hidden">
               {cert.image ? (
-                <img
+                <Image
                   src={cert.image}
                   alt={cert.name}
+                  width={600}
+                  height={800}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
@@ -136,9 +139,11 @@ export default function CertificatesGrid({ certificates, locale }: Props) {
               <div className="relative">
                 <div className="h-48 bg-gradient-to-br from-accent-100 to-primary-100 flex items-center justify-center rounded-t-2xl">
                   {selectedCert.image ? (
-                    <img
+                    <Image
                       src={selectedCert.image}
                       alt={selectedCert.name}
+                      width={600}
+                      height={300}
                       className="w-full h-full object-contain p-4"
                     />
                   ) : (

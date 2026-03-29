@@ -117,7 +117,7 @@ export default function AdminLayout({
           <Ship className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-white font-bold text-sm leading-tight">裕江船舶</h1>
+          <h1 className="text-white font-bold text-sm leading-tight">禹疆船舶</h1>
           <p className="text-primary-300 text-xs">管理系统</p>
         </div>
       </div>

@@ -6,10 +6,11 @@ import prisma from "@/lib/prisma";
 // GET: Get customer detail with inquiries and follow-ups
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = await params;
+    const { slug } = params;
+    const id = slug;
 
     const customer = await prisma.customer.findUnique({
       where: { id },
@@ -38,10 +39,11 @@ export async function GET(
 // PUT: Update customer
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = await params;
+    const { slug } = params;
+    const id = slug;
     const updates = await request.json();
 
     const existing = await prisma.customer.findUnique({ where: { id } });
@@ -85,10 +87,11 @@ export async function PUT(
 // DELETE: Delete customer and related follow-ups
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = await params;
+    const { slug } = params;
+    const id = slug;
 
     const existing = await prisma.customer.findUnique({ where: { id } });
     if (!existing) {

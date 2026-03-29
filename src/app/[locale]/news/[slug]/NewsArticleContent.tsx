@@ -14,6 +14,7 @@ import {
   Link2,
   Mail,
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface Article {
   id: string;
@@ -123,9 +124,11 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
 
             {/* Hero Image Placeholder */}
             {article.image ? (
-              <img
+              <Image
                 src={article.image}
                 alt={localizedTitle}
+                width={1200}
+                height={600}
                 className="w-full rounded-xl mb-8 max-h-96 object-cover"
               />
             ) : (

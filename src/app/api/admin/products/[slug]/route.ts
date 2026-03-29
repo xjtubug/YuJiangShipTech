@@ -6,13 +6,13 @@ import prisma from "@/lib/prisma";
 // GET: Get single product
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = params;
+    const { slug } = params;
 
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await prisma.product.findFirst({
+      where: { OR: [{ id: slug }, { slug: slug }] },
       include: {
         category: true,
         expertReviews: {
@@ -39,16 +39,17 @@ export async function GET(
 // PUT: Update product (all fields)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = params;
+    const { slug } = params;
     const body = await request.json();
 
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const existing = await prisma.product.findFirst({ where: { OR: [{ id: slug }, { slug: slug }] } });
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+    const id = existing.id;
 
     const {
       nameEn, nameZh, nameJa, nameAr,
@@ -119,15 +120,16 @@ export async function PUT(
 // DELETE: Delete product
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = params;
+    const { slug } = params;
 
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const existing = await prisma.product.findFirst({ where: { OR: [{ id: slug }, { slug: slug }] } });
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+    const id = existing.id;
 
     await prisma.product.delete({ where: { id } });
 
@@ -144,17 +146,18 @@ export async function DELETE(
 // PATCH: Quick actions (toggle published, toggle featured, change status)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = params;
+    const { slug } = params;
     const body = await request.json();
     const { action, value } = body;
 
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const existing = await prisma.product.findFirst({ where: { OR: [{ id: slug }, { slug: slug }] } });
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+    const id = existing.id;
 
     const data: Record<string, unknown> = {};
 

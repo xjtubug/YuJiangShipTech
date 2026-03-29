@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  // id can be a product ID or slug
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+  const { slug } = params;
+  // slug can be a product ID or slug
   const product = await prisma.product.findFirst({
-    where: { OR: [{ id }, { slug: id }] },
+    where: { OR: [{ id: slug }, { slug: slug }] },
     select: { id: true },
   });
   if (!product) return NextResponse.json({ reviews: [] });

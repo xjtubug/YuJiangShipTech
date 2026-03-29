@@ -6,10 +6,11 @@ import { generateQuotationPdf } from '@/lib/pdf';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = params;
+    const { slug } = params;
+    const id = slug;
 
     if (!id) {
       return NextResponse.json({ error: 'Inquiry ID is required' }, { status: 400 });

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, LogOut, Loader2, X, Upload, Video, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Expert {
@@ -207,7 +208,7 @@ export default function ExpertDashboardPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {expert?.avatar && (
-              <img src={expert.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+              <Image src={expert.avatar} alt={expert?.name || 'Expert avatar'} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
             )}
             <div>
               <h1 className="text-lg font-bold text-gray-900">{expert?.name}</h1>
@@ -234,7 +235,7 @@ export default function ExpertDashboardPage() {
           {products.map(product => (
             <div key={product.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
               <div className="aspect-video bg-gray-100 relative">
-                <img src={getProductImage(product)} alt={product.nameZh} className="w-full h-full object-cover" />
+                <Image src={getProductImage(product)} alt={product.nameZh} width={800} height={450} className="w-full h-full object-cover" />
               </div>
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 mb-1">{product.nameZh}</h3>
@@ -324,7 +325,7 @@ export default function ExpertDashboardPage() {
                 <div className="flex flex-wrap gap-2 mb-2">
                   {reviewImages.map((img, idx) => (
                     <div key={idx} className="relative w-20 h-20">
-                      <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                      <Image src={img} alt={`product-img-${idx}`} width={400} height={300} className="w-full h-full object-cover rounded-lg" />
                       <button
                         onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== idx))}
                         className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"

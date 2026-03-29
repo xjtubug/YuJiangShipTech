@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, CalendarDays, ArrowRight, Tag } from 'lucide-react';
+import Image from 'next/image';
 
 interface NewsArticle {
   id: string;
@@ -108,9 +109,11 @@ export default function NewsGrid({ news, locale, categories, categoryLabels }: N
                 {/* Image */}
                 <div className="h-48 bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center overflow-hidden relative">
                   {article.image ? (
-                    <img
+                    <Image
                       src={article.image}
                       alt={getLocalizedTitle(article, locale)}
+                      width={800}
+                      height={450}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (

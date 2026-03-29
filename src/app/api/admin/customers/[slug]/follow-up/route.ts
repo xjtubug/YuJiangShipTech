@@ -6,10 +6,11 @@ import prisma from "@/lib/prisma";
 // GET: List follow-ups for a customer
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = await params;
+    const { slug } = params;
+    const id = slug;
 
     const customer = await prisma.customer.findUnique({ where: { id } });
     if (!customer) {
@@ -31,10 +32,11 @@ export async function GET(
 // POST: Add a follow-up record
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { slug: string } }
 ) {
   try {
-    const { id } = await params;
+    const { slug } = params;
+    const id = slug;
     const body = await request.json();
     const { action, content } = body;
 

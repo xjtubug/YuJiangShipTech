@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Star, Loader2, Upload, CheckCircle, Award } from 'lucide-react';
+import Image from 'next/image';
 import { getCountryFlag } from '@/lib/utils';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -234,7 +235,7 @@ export default function ProductReviews({ reviews, slug }: ProductReviewsProps) {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       {review.expert.avatar ? (
-                        <img src={review.expert.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <Image src={review.expert.avatar} alt={review.expert.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className="w-10 h-10 bg-primary-200 rounded-full flex items-center justify-center">
                           <Award className="w-5 h-5 text-primary-600" />
@@ -254,7 +255,7 @@ export default function ProductReviews({ reviews, slug }: ProductReviewsProps) {
                   {images.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {images.map((img: string, idx: number) => (
-                        <img key={idx} src={img} alt="" className="w-20 h-20 object-cover rounded-lg" />
+                        <Image key={idx} src={img} alt={`review-image-${idx}`} width={80} height={80} className="w-20 h-20 object-cover rounded-lg" />
                       ))}
                     </div>
                   )}
@@ -296,7 +297,7 @@ export default function ProductReviews({ reviews, slug }: ProductReviewsProps) {
                   {images.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {images.map((img: string, idx: number) => (
-                        <img key={idx} src={img} alt="" className="w-20 h-20 object-cover rounded-lg" />
+                        <Image key={idx} src={img} alt={`comment-image-${idx}`} width={80} height={80} className="w-20 h-20 object-cover rounded-lg" />
                       ))}
                     </div>
                   )}
@@ -371,7 +372,7 @@ export default function ProductReviews({ reviews, slug }: ProductReviewsProps) {
             <div className="flex flex-wrap gap-2 mb-2">
               {commentImages.map((img, idx) => (
                 <div key={idx} className="relative w-16 h-16">
-                  <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
+                  <Image src={img} alt={`comment-image-${idx}`} width={300} height={200} className="w-full h-full object-cover rounded-lg" />
                   <button type="button" onClick={() => setCommentImages(prev => prev.filter((_, i) => i !== idx))}
                     className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">×</button>
                 </div>

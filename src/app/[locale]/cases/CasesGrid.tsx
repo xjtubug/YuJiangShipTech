@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Globe,
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface CaseStudy {
   id: string;
@@ -123,9 +124,11 @@ export default function CasesGrid({ cases, locale }: Props) {
                 {/* Project Image */}
                 <div className="h-52 bg-gradient-to-br from-secondary-100 to-primary-100 flex items-center justify-center relative overflow-hidden">
                   {cs.image ? (
-                    <img
+                    <Image
                       src={cs.image}
                       alt={title}
+                      width={800}
+                      height={350}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
@@ -157,9 +160,11 @@ export default function CasesGrid({ cases, locale }: Props) {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                       {cs.clientLogo ? (
-                        <img
+                        <Image
                           src={cs.clientLogo}
                           alt={cs.clientName}
+                          width={24}
+                          height={24}
                           className="w-6 h-6 object-contain"
                         />
                       ) : (

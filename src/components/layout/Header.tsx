@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const languages = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -116,7 +117,7 @@ export default function Header() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
               {logoUrl ? (
-                <img src={logoUrl} alt="YuJiang ShipTech" className="h-9 md:h-12 w-auto object-contain" />
+                <Image src={logoUrl} alt="YuJiang ShipTech" width={150} height={48} className="h-9 md:h-12 w-auto object-contain" />
               ) : (
                 <>
                   <span className="text-2xl md:text-3xl font-extrabold text-accent-500">YuJiang</span>
@@ -300,7 +301,7 @@ export default function Header() {
                   onClick={() => setMobileOpen(false)}
                 >
                   {logoUrl ? (
-                    <img src={logoUrl} alt="YuJiang ShipTech" className="h-8 w-auto object-contain" />
+                    <Image src={logoUrl} alt="YuJiang ShipTech" width={140} height={40} className="h-8 w-auto object-contain" />
                   ) : (
                     <>
                       <span className="text-xl font-extrabold text-accent-500">YuJiang</span>
