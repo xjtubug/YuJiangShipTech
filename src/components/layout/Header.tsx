@@ -7,12 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
-  Search,
   ShoppingCart,
   Globe,
   ChevronDown,
 } from 'lucide-react';
-import { useInquiryStore, useCurrencyStore, useSearchStore } from '@/lib/store';
+import { useInquiryStore, useCurrencyStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const languages = [
@@ -39,7 +38,6 @@ export default function Header() {
 
   const inquiryCount = useInquiryStore((s) => s.items.length);
   const { currency, setCurrency } = useCurrencyStore();
-  const toggleSearch = useSearchStore((s) => s.toggle);
 
   const navLinks = [
     { href: '/', label: t('home') },
@@ -84,11 +82,14 @@ export default function Header() {
     [router, pathname],
   );
 
-  const currentLang = languages.find(
-    (l) =>
-      typeof window !== 'undefined' &&
+  const [currentLang, setCurrentLang] = useState<(typeof languages)[number]>(languages[0]);
+
+  useEffect(() => {
+    const match = languages.find((l) =>
       window.location.pathname.startsWith(`/${l.code}`),
-  ) ?? languages[0];
+    );
+    if (match) setCurrentLang(match);
+  }, [pathname]);
 
   return (
     <>
@@ -210,15 +211,6 @@ export default function Header() {
                 </AnimatePresence>
               </div>
 
-              {/* Search */}
-              <button
-                onClick={toggleSearch}
-                className="p-2 rounded-lg text-primary-700 hover:bg-primary-50 transition-colors"
-                aria-label="Search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-
               {/* Inquiry cart */}
               <Link
                 href="/quote"
@@ -238,16 +230,8 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Mobile: search + cart + hamburger */}
+            {/* Mobile: cart + hamburger */}
             <div className="flex lg:hidden items-center gap-1">
-              <button
-                onClick={toggleSearch}
-                className="p-2 rounded-lg text-primary-700"
-                aria-label="Search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-
               <Link
                 href="/quote"
                 className="relative p-2 rounded-lg text-primary-700"

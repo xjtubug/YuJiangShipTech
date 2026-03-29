@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { generateQuotationPdf } from '@/lib/pdf';
@@ -8,6 +10,10 @@ export async function GET(
 ) {
   try {
     const { id } = params;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Inquiry ID is required' }, { status: 400 });
+    }
 
     const inquiry = await prisma.inquiry.findUnique({
       where: { id },
@@ -20,6 +26,13 @@ export async function GET(
 
     if (!inquiry) {
       return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 });
+    }
+
+    if (inquiry.items.length === 0) {
+      return NextResponse.json(
+        { error: 'No items in this inquiry to generate a quotation' },
+        { status: 400 }
+      );
     }
 
     const quotationItems = inquiry.items.map((item) => {
@@ -49,6 +62,7 @@ export async function GET(
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="quotation-${inquiry.inquiryNumber}.pdf"`,
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {

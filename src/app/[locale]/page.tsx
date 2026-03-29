@@ -1,17 +1,17 @@
 import { getTranslations } from 'next-intl/server';
+import dynamic from 'next/dynamic';
 import prisma from '@/lib/prisma';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
-import AdvantagesSection from '@/components/home/AdvantagesSection';
-import CaseStudySection from '@/components/home/CaseStudySection';
-import CertificationsSection from '@/components/home/CertificationsSection';
-import NewsSection from '@/components/home/NewsSection';
-import SearchSection from '@/components/home/SearchSection';
+
+const AdvantagesSection = dynamic(() => import('@/components/home/AdvantagesSection'));
+const CertificationsSection = dynamic(() => import('@/components/home/CertificationsSection'));
+const NewsSection = dynamic(() => import('@/components/home/NewsSection'));
 
 export default async function HomePage() {
   const t = await getTranslations('common');
 
-  const [products, news, cases, certificates] = await Promise.all([
+  const [products, news, certificates, popularProducts] = await Promise.all([
     prisma.product.findMany({
       where: { featured: true, published: true },
       include: { category: true },
@@ -23,12 +23,18 @@ export default async function HomePage() {
       orderBy: { createdAt: 'desc' },
       take: 3,
     }),
-    prisma.caseStudy.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 3,
-    }),
     prisma.certificate.findMany({
       orderBy: { createdAt: 'desc' },
+    }),
+    // Get popular products for search tags (based on page views)
+    prisma.product.findMany({
+      where: { published: true },
+      include: {
+        category: true,
+        _count: { select: { pageViews: true } },
+      },
+      orderBy: { pageViews: { _count: 'desc' } },
+      take: 6,
     }),
   ]);
 
@@ -48,15 +54,16 @@ export default async function HomePage() {
     createdAt: n.createdAt.toISOString(),
   }));
 
-  const serializedCases = cases.map((c) => ({
-    ...c,
-    createdAt: c.createdAt.toISOString(),
-  }));
-
   const serializedCertificates = certificates.map((c) => ({
     ...c,
     validUntil: c.validUntil?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
+  }));
+
+  const searchTags = popularProducts.map((p) => ({
+    nameEn: p.nameEn,
+    nameZh: p.nameZh,
+    slug: p.slug,
   }));
 
   // JSON-LD structured data for featured products
@@ -92,11 +99,9 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <HeroSection />
+      <HeroSection searchTags={searchTags} />
       <FeaturedProducts products={serializedProducts} />
-      <SearchSection />
       <AdvantagesSection />
-      <CaseStudySection cases={serializedCases} />
       <CertificationsSection certificates={serializedCertificates} />
       <NewsSection news={serializedNews} />
     </>

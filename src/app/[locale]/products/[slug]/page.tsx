@@ -62,6 +62,14 @@ export default async function ProductDetailPage({
         where: { approved: true },
         orderBy: { createdAt: 'desc' },
       },
+      expertReviews: {
+        include: {
+          expert: {
+            select: { id: true, name: true, avatar: true, bio: true, title: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
 
@@ -100,6 +108,10 @@ export default async function ProductDetailPage({
       ...r,
       createdAt: r.createdAt.toISOString(),
     })),
+    expertReviews: product.expertReviews.map((er) => ({
+      ...er,
+      createdAt: er.createdAt.toISOString(),
+    })),
   };
 
   const serializedRelated = relatedProducts.map((p) => ({
@@ -126,7 +138,7 @@ export default async function ProductDetailPage({
     sku: product.sku,
     brand: {
       '@type': 'Brand',
-      name: 'YuJiang Ship Technology',
+      name: 'YuJiang ShipTechnology',
     },
     offers: {
       '@type': 'Offer',
@@ -135,7 +147,7 @@ export default async function ProductDetailPage({
       availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'Organization',
-        name: 'YuJiang Ship Technology',
+        name: 'YuJiang ShipTechnology',
       },
     },
     ...(avgRating

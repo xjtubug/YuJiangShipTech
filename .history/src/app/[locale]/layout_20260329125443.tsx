@@ -30,8 +30,8 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | YuJiang Ship Technology',
-    default: 'YuJiang Ship Technology – Marine Equipment & Ship Supplies',
+    template: '%s | YuJiang ShipTechnology',
+    default: 'YuJiang ShipTechnology – Marine Equipment & Ship Supplies',
   },
   description:
     'Leading B2B supplier of marine equipment, ship spare parts, and vessel supplies. Serving shipyards, fleet operators, and maritime companies worldwide.',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   ),
   openGraph: {
     type: 'website',
-    siteName: 'YuJiang Ship Technology',
+    siteName: 'YuJiang ShipTechnology',
     locale: 'en_US',
   },
   robots: {
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'YuJiang Ship Technology',
+  name: 'YuJiang ShipTechnology',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiang-shiptech.com',
   logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiang-shiptech.com'}/logo.png`,
   description:

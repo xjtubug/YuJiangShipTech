@@ -45,9 +45,11 @@ model Product {
   pdfUrl          String?
   featured        Boolean   @default(false)
   published       Boolean   @default(true)
+  status          String    @default("published") // draft, published, archived
   categoryId      String
   category        Category  @relation(fields: [categoryId], references: [id])
   reviews         Review[]
+  expertReviews   ExpertReview[]
   inquiryItems    InquiryItem[]
   pageViews       PageView[]
   createdAt       DateTime  @default(now())
@@ -193,8 +195,23 @@ model AdminUser {
   email       String   @unique
   password    String
   name        String
-  role        String   @default("admin")
+  role        String   @default("admin") // admin, expert
+  avatar      String?
+  bio         String?
+  title       String?
   createdAt   DateTime @default(now())
+  expertReviews ExpertReview[]
+}
+
+model ExpertReview {
+  id          String    @id @default(uuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  expertId    String
+  expert      AdminUser @relation(fields: [expertId], references: [id])
+  content     String
+  rating      Int       @default(5)
+  createdAt   DateTime  @default(now())
 }
 
 model Report {
@@ -225,4 +242,13 @@ model SiteSettings {
   key         String   @unique
   value       String
   updatedAt   DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  source      String?  // footer, popup, manual
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }

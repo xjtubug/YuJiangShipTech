@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -14,15 +14,22 @@ import {
   Menu,
   X,
   Ship,
+  UserCheck,
+  UsersRound,
+  Globe,
+  PenTool,
 } from 'lucide-react';
 
 const navItems = [
-  { href: '', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/visitors', label: 'Visitors', icon: Users },
-  { href: '/inquiries', label: 'Inquiries', icon: MessageSquare },
-  { href: '/products', label: 'Products', icon: Package },
-  { href: '/reports', label: 'Reports', icon: FileText },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '', label: 'Dashboard', labelZh: '仪表盘', icon: LayoutDashboard },
+  { href: '/visitors', label: 'Visitors', labelZh: '访客', icon: Users },
+  { href: '/inquiries', label: 'Inquiries', labelZh: '询价', icon: MessageSquare },
+  { href: '/products', label: 'Products', labelZh: '产品', icon: Package },
+  { href: '/reports', label: 'Reports', labelZh: '报告', icon: FileText },
+  { href: '/experts', label: 'Experts', labelZh: '专家', icon: UserCheck },
+  { href: '/customers', label: 'Customers', labelZh: '客户', icon: UsersRound },
+  { href: '/cms', label: 'CMS', labelZh: '内容管理', icon: PenTool },
+  { href: '/settings', label: 'Settings', labelZh: '设置', icon: Settings },
 ];
 
 export default function AdminLayout({
@@ -33,6 +40,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const locale = (params.locale as string) || 'en';
   const basePath = `/${locale}/admin`;
 
@@ -40,6 +48,12 @@ export default function AdminLayout({
     const fullPath = `${basePath}${href}`;
     if (href === '') return pathname === basePath || pathname === `${basePath}/`;
     return pathname.startsWith(fullPath);
+  };
+
+  const toggleLocale = () => {
+    const newLocale = locale === 'zh' ? 'en' : 'zh';
+    const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
+    router.push(newPath);
   };
 
   const sidebar = (
@@ -51,7 +65,7 @@ export default function AdminLayout({
         </div>
         <div>
           <h1 className="text-white font-bold text-sm leading-tight">YuJiang</h1>
-          <p className="text-primary-300 text-xs">Ship Technology</p>
+          <p className="text-primary-300 text-xs">ShipTechnology</p>
         </div>
       </div>
 
@@ -72,7 +86,7 @@ export default function AdminLayout({
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              {item.label}
+              {locale === 'zh' ? item.labelZh : item.label}
             </Link>
           );
         })}
@@ -85,7 +99,7 @@ export default function AdminLayout({
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-300 hover:bg-primary-800 hover:text-white transition-colors"
         >
           <ExternalLink className="w-5 h-5 flex-shrink-0" />
-          Back to Site
+          {locale === 'zh' ? '返回网站' : 'Back to Site'}
         </Link>
       </div>
     </nav>
@@ -128,12 +142,24 @@ export default function AdminLayout({
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-semibold text-gray-800">Admin Panel</h2>
+            <h2 className="text-lg font-semibold text-gray-800">
+              {locale === 'zh' ? '管理面板' : 'Admin Panel'}
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleLocale}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              title="Switch Language"
+            >
+              <Globe className="w-4 h-4" />
+              {locale === 'zh' ? 'EN' : '中文'}
+            </button>
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-700">Administrator</p>
+              <p className="text-sm font-medium text-gray-700">
+                {locale === 'zh' ? '管理员' : 'Administrator'}
+              </p>
               <p className="text-xs text-gray-400">admin@yujiangshiptech.com</p>
             </div>
             <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">

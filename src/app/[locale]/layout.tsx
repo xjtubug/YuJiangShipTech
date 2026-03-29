@@ -7,7 +7,6 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import SearchOverlay from '@/components/layout/SearchOverlay';
 import WhatsAppFloat from '@/components/common/WhatsAppFloat';
 import CookieConsent from '@/components/common/CookieConsent';
 import SocialFloat from '@/components/common/SocialFloat';
@@ -30,8 +29,8 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | YuJiang Ship Technology',
-    default: 'YuJiang Ship Technology – Marine Equipment & Ship Supplies',
+    template: '%s | YuJiang ShipTechnology',
+    default: 'YuJiang ShipTechnology – Marine Equipment & Ship Supplies',
   },
   description:
     'Leading B2B supplier of marine equipment, ship spare parts, and vessel supplies. Serving shipyards, fleet operators, and maritime companies worldwide.',
@@ -49,7 +48,7 @@ export const metadata: Metadata = {
   ),
   openGraph: {
     type: 'website',
-    siteName: 'YuJiang Ship Technology',
+    siteName: 'YuJiang ShipTechnology',
     locale: 'en_US',
   },
   robots: {
@@ -61,7 +60,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'YuJiang Ship Technology',
+  name: 'YuJiang ShipTechnology',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com',
   logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com'}/logo.png`,
   description:
@@ -116,7 +115,6 @@ export default async function LocaleLayout({
       >
         <NextIntlClientProvider messages={messages}>
           <Header />
-          <SearchOverlay />
           <main className="min-h-screen">{children}</main>
           <Footer />
           <WhatsAppFloat />

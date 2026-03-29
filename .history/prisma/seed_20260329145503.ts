@@ -1,5 +1,5 @@
 /**
- * Prisma Seed Script — YuJiang Ship Technology (禺疆船艇科技)
+ * Prisma Seed Script — YuJiang ShipTechnology (禺疆船艇科技)
  *
  * Run with:  npx tsx prisma/seed.ts
  */
@@ -81,7 +81,7 @@ function images(...paths: string[]): string {
 // ── Main ───────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🌊 Seeding YuJiang Ship Technology database …')
+  console.log('🌊 Seeding YuJiang ShipTechnology database …')
 
   // ── 1. Delete existing data (order respects FK constraints) ──
   await prisma.pageView.deleteMany()
@@ -621,11 +621,11 @@ async function main() {
       {
         id: NEWS.n1,
         slug: 'yujiang-wins-offshore-wind-contract-2024',
-        titleEn: 'YuJiang Ship Technology Wins Major Offshore Wind Farm Vessel Equipment Contract',
+        titleEn: 'YuJiang ShipTechnology Wins Major Offshore Wind Farm Vessel Equipment Contract',
         titleZh: '禺疆船艇科技赢得大型海上风电船艇设备合同',
         titleJa: '禺疆船艇科技が大型洋上風力発電船艇設備契約を獲得',
         titleAr: 'يوجيانغ لتكنولوجيا السفن تفوز بعقد كبير لمعدات سفن مزارع الرياح البحرية',
-        contentEn: 'YuJiang Ship Technology has been awarded a significant contract to supply marine valves, pumps, and deck equipment for a fleet of six new offshore wind farm installation vessels being built at Jiangnan Shipyard. The contract, valued at approximately $8.5 million, marks the company\'s largest single order in the renewable energy sector. CEO Mr. Zhang Wei stated: "This contract validates our long-term strategy to expand into the growing offshore wind market. Our products meet the stringent requirements of this demanding application."',
+        contentEn: 'YuJiang ShipTechnology has been awarded a significant contract to supply marine valves, pumps, and deck equipment for a fleet of six new offshore wind farm installation vessels being built at Jiangnan Shipyard. The contract, valued at approximately $8.5 million, marks the company\'s largest single order in the renewable energy sector. CEO Mr. Zhang Wei stated: "This contract validates our long-term strategy to expand into the growing offshore wind market. Our products meet the stringent requirements of this demanding application."',
         contentZh: '禺疆船艇科技获得了一份重大合同，为江南造船厂正在建造的六艘新型海上风电安装船提供船用阀门、泵和甲板设备。该合同价值约850万美元，是公司在可再生能源领域的最大单笔订单。首席执行官张伟先生表示："这份合同验证了我们拓展不断增长的海上风电市场的长期战略。我们的产品满足这一高要求应用的严格标准。"',
         contentJa: '禺疆船艇科技は、江南造船所で建造中の6隻の新型洋上風力発電設置船に船艇用バルブ、ポンプ、甲板機器を供給する大型契約を受注しました。',
         contentAr: 'فازت يوجيانغ لتكنولوجيا السفن بعقد كبير لتوريد الصمامات البحرية والمضخات ومعدات السطح لأسطول من ست سفن جديدة لتركيب مزارع الرياح البحرية.',
@@ -640,7 +640,7 @@ async function main() {
         titleZh: 'IMO 2025排放法规如何重塑船艇设备需求',
         titleJa: 'IMO 2025排出規制が船艇機器需要をどう変えるか',
         titleAr: 'كيف تعيد لوائح انبعاثات IMO 2025 تشكيل الطلب على المعدات البحرية',
-        contentEn: 'The International Maritime Organization\'s tightening emission standards are driving a surge in demand for fuel-efficient marine engine components and exhaust treatment systems. Ship owners worldwide are retrofitting their fleets to comply with the latest EEXI and CII requirements. YuJiang Ship Technology has responded by developing a new line of low-emission compatible turbochargers and fuel injection components that help vessel operators reduce their carbon intensity without sacrificing performance.',
+        contentEn: 'The International Maritime Organization\'s tightening emission standards are driving a surge in demand for fuel-efficient marine engine components and exhaust treatment systems. Ship owners worldwide are retrofitting their fleets to comply with the latest EEXI and CII requirements. YuJiang ShipTechnology has responded by developing a new line of low-emission compatible turbochargers and fuel injection components that help vessel operators reduce their carbon intensity without sacrificing performance.',
         contentZh: '国际海事组织不断收紧的排放标准正在推动对节能船用发动机零部件和尾气处理系统的需求激增。全球船东正在改装船队以符合最新的EEXI和CII要求。禺疆船艇科技已开发出新型低排放兼容涡轮增压器和燃油喷射组件系列产品，帮助船艇运营商在不牺牲性能的情况下降低碳强度。',
         contentJa: '国際海事機関の排出基準の厳格化により、燃料効率の高い船艇用エンジン部品と排ガス処理システムの需要が急増しています。',
         contentAr: 'تدفع معايير الانبعاثات المشددة للمنظمة البحرية الدولية إلى زيادة الطلب على مكونات المحركات البحرية الموفرة للوقود وأنظمة معالجة العوادم.',
@@ -651,11 +651,11 @@ async function main() {
       {
         id: NEWS.n3,
         slug: 'marintec-china-2024-exhibition-recap',
-        titleEn: 'YuJiang Ship Technology Showcases Smart Marine Solutions at Marintec China 2024',
+        titleEn: 'YuJiang ShipTechnology Showcases Smart Marine Solutions at Marintec China 2024',
         titleZh: '禺疆船艇科技在2024中国国际海事技术学术会议上展示智能海事解决方案',
         titleJa: '禺疆船艇科技が2024年中国国際海事技術会議でスマート海事ソリューションを展示',
         titleAr: 'يوجيانغ لتكنولوجيا السفن تعرض حلول بحرية ذكية في مارينتك الصين 2024',
-        contentEn: 'At Marintec China 2024 in Shanghai, YuJiang Ship Technology unveiled its latest IoT-enabled marine valve monitoring system and a next-generation energy-efficient centrifugal pump series. The company\'s booth attracted considerable attention from international buyers, with delegations from Japan, South Korea, Greece, and Norway expressing strong interest. Over 150 business inquiries were received during the four-day event.',
+        contentEn: 'At Marintec China 2024 in Shanghai, YuJiang ShipTechnology unveiled its latest IoT-enabled marine valve monitoring system and a next-generation energy-efficient centrifugal pump series. The company\'s booth attracted considerable attention from international buyers, with delegations from Japan, South Korea, Greece, and Norway expressing strong interest. Over 150 business inquiries were received during the four-day event.',
         contentZh: '在上海举办的2024中国国际海事技术学术会议上，禺疆船艇科技发布了最新的物联网船用阀门监控系统和新一代节能离心泵系列。公司展位吸引了国际买家的广泛关注，来自日本、韩国、希腊和挪威的代表团表达了浓厚兴趣。在为期四天的展会中共收到超过150个商务咨询。',
         contentJa: '上海で開催されたMarintec China 2024で、禺疆船艇科技は最新のIoT対応船艇用バルブ監視システムと次世代省エネ遠心ポンプシリーズを発表しました。',
         contentAr: 'كشفت يوجيانغ لتكنولوجيا السفن في مارينتك الصين 2024 بشنغهاي عن أحدث نظام مراقبة صمامات بحرية مزود بإنترنت الأشياء وسلسلة مضخات طرد مركزي موفرة للطاقة.',
@@ -670,7 +670,7 @@ async function main() {
         titleZh: '2025年第一季度全球造船订单量达十年新高',
         titleJa: '2025年第1四半期の世界造船受注残高が10年ぶりの高水準に',
         titleAr: 'سجل الطلبات العالمي لبناء السفن يصل إلى أعلى مستوى في 10 سنوات في الربع الأول من 2025',
-        contentEn: 'According to the latest Clarkson Research data, the global shipbuilding order book has reached its highest level in a decade, driven by container ship and LNG carrier orders. Chinese shipyards hold approximately 55% of the current order book by tonnage. Industry analysts note that this wave of new construction is generating strong demand for marine equipment suppliers, with delivery schedules extending into 2028. YuJiang Ship Technology reports a 35% year-over-year increase in orders for the first quarter.',
+        contentEn: 'According to the latest Clarkson Research data, the global shipbuilding order book has reached its highest level in a decade, driven by container ship and LNG carrier orders. Chinese shipyards hold approximately 55% of the current order book by tonnage. Industry analysts note that this wave of new construction is generating strong demand for marine equipment suppliers, with delivery schedules extending into 2028. YuJiang ShipTechnology reports a 35% year-over-year increase in orders for the first quarter.',
         contentZh: '根据克拉克森研究的最新数据，受集装箱船和LNG运输船订单推动，全球造船订单量已达十年来最高水平。按吨位计算，中国造船厂约占当前订单的55%。行业分析师指出，这波新建造浪潮正在为船艇设备供应商带来强劲需求，交付计划已延伸至2028年。禺疆船艇科技第一季度订单同比增长35%。',
         contentJa: 'クラークソン・リサーチの最新データによると、コンテナ船とLNG船の受注に牽引され、世界の造船受注残高は過去10年で最高水準に達しました。',
         contentAr: 'وفقًا لأحدث بيانات أبحاث كلاركسون، وصل سجل طلبات بناء السفن العالمي إلى أعلى مستوى له في عقد، مدفوعًا بطلبات سفن الحاويات وناقلات الغاز الطبيعي المسال.',
@@ -695,7 +695,7 @@ async function main() {
         clientLogo: '/images/clients/cosco-logo.png',
         country: 'China',
         image: '/images/cases/cosco-project.jpg',
-        contentEn: 'YuJiang Ship Technology supplied over 3,000 marine bronze gate valves and butterfly valves for COSCO Shipping\'s fleet-wide valve replacement program covering 25 bulk carriers. The project required strict adherence to CCS classification standards and a phased delivery schedule synchronized with each vessel\'s dry-dock rotation. All valves were delivered on time across a 14-month period, with zero rejection rate at incoming inspection. The total contract value exceeded $2.8 million, and COSCO has since placed a follow-up order for their container vessel fleet.',
+        contentEn: 'YuJiang ShipTechnology supplied over 3,000 marine bronze gate valves and butterfly valves for COSCO Shipping\'s fleet-wide valve replacement program covering 25 bulk carriers. The project required strict adherence to CCS classification standards and a phased delivery schedule synchronized with each vessel\'s dry-dock rotation. All valves were delivered on time across a 14-month period, with zero rejection rate at incoming inspection. The total contract value exceeded $2.8 million, and COSCO has since placed a follow-up order for their container vessel fleet.',
         contentZh: '禺疆船艇科技为中远海运的全船队阀门更换计划供应了3000多个船用青铜闸阀和蝶阀，覆盖25艘散货船。项目要求严格遵守CCS船级社标准，分阶段交付计划与每艘船的坞修轮换同步。所有阀门在14个月内准时交付，进货检验零退货率。合同总值超过280万美元，中远海运随后又为其集装箱船队追加了订单。',
         rating: 5,
       },
@@ -708,7 +708,7 @@ async function main() {
         clientLogo: '/images/clients/farstad-logo.png',
         country: 'Norway',
         image: '/images/cases/farstad-project.jpg',
-        contentEn: 'Farstad Shipping selected YuJiang Ship Technology as the pump system supplier for four new platform supply vessels being built at VARD shipyard. The scope included 32 centrifugal seawater pumps, 16 gear oil pumps, and 8 fire-fighting pump sets. YuJiang\'s engineering team worked closely with the VARD design department to optimize pump arrangements for the vessel\'s compact engine room layout. The project was completed two weeks ahead of schedule, and pump performance exceeded the specified efficiency targets by 3%.',
+        contentEn: 'Farstad Shipping selected YuJiang ShipTechnology as the pump system supplier for four new platform supply vessels being built at VARD shipyard. The scope included 32 centrifugal seawater pumps, 16 gear oil pumps, and 8 fire-fighting pump sets. YuJiang\'s engineering team worked closely with the VARD design department to optimize pump arrangements for the vessel\'s compact engine room layout. The project was completed two weeks ahead of schedule, and pump performance exceeded the specified efficiency targets by 3%.',
         contentZh: 'Farstad航运选择禺疆船艇科技作为VARD造船厂在建的四艘新型平台供给船的泵系统供应商。供货范围包括32台离心海水泵、16台齿轮油泵和8套消防泵组。禺疆工程团队与VARD设计部门密切合作，优化了紧凑机舱布局的泵组布置方案。项目提前两周完成，泵性能超出规定效率目标3%。',
         rating: 5,
       },
@@ -721,7 +721,7 @@ async function main() {
         clientLogo: '/images/clients/adports-logo.png',
         country: 'UAE',
         image: '/images/cases/adports-project.jpg',
-        contentEn: 'YuJiang Ship Technology was contracted by Abu Dhabi Ports Group to supply comprehensive safety equipment packages for their fleet of harbor tugs and pilot boats. The project included SOLAS-approved life rafts, CO₂ fire suppression systems, fire hose stations, and emergency signaling equipment. All products were delivered with CCS and DNV-GL dual certification. YuJiang also provided on-site installation supervision and crew training. The contract established YuJiang as the preferred safety equipment supplier for Abu Dhabi Ports\' ongoing fleet expansion program.',
+        contentEn: 'YuJiang ShipTechnology was contracted by Abu Dhabi Ports Group to supply comprehensive safety equipment packages for their fleet of harbor tugs and pilot boats. The project included SOLAS-approved life rafts, CO₂ fire suppression systems, fire hose stations, and emergency signaling equipment. All products were delivered with CCS and DNV-GL dual certification. YuJiang also provided on-site installation supervision and crew training. The contract established YuJiang as the preferred safety equipment supplier for Abu Dhabi Ports\' ongoing fleet expansion program.',
         contentZh: '禺疆船艇科技与阿布扎比港口集团签约，为其港作拖轮和引航船队提供综合安全设备套装。项目包括SOLAS认证救生筏、CO₂灭火系统、消防水龙带站和应急信号设备。所有产品均提供CCS和DNV-GL双重认证。禺疆还提供了现场安装监督和船员培训。该合同使禺疆成为阿布扎比港口持续船队扩展计划的首选安全设备供应商。',
         rating: 5,
       },
@@ -734,7 +734,7 @@ async function main() {
         clientLogo: '/images/clients/nyk-logo.png',
         country: 'Japan',
         image: '/images/cases/nyk-project.jpg',
-        contentEn: 'NYK Line partnered with YuJiang Ship Technology for the supply of replacement pistons, turbocharger assemblies, and cylinder liners for their fleet of eight LNG carriers during scheduled engine overhauls. The parts were required to meet MAN B&W original specifications with DNV-GL and ClassNK certification. YuJiang\'s quality team implemented a dedicated production line with 100% dimensional inspection and material traceability. All 48 pistons and 16 turbocharger cartridges were delivered within tolerance, achieving a 99.7% dimensional compliance rate. The successful program led to a three-year framework agreement.',
+        contentEn: 'NYK Line partnered with YuJiang ShipTechnology for the supply of replacement pistons, turbocharger assemblies, and cylinder liners for their fleet of eight LNG carriers during scheduled engine overhauls. The parts were required to meet MAN B&W original specifications with DNV-GL and ClassNK certification. YuJiang\'s quality team implemented a dedicated production line with 100% dimensional inspection and material traceability. All 48 pistons and 16 turbocharger cartridges were delivered within tolerance, achieving a 99.7% dimensional compliance rate. The successful program led to a three-year framework agreement.',
         contentZh: '日本邮船与禺疆船艇科技合作，为其8艘LNG运输船在计划维修期间提供替换活塞、涡轮增压器总成和气缸套。零件需符合MAN B&W原厂规格，并获得DNV-GL和ClassNK认证。禺疆质量团队建立了专用生产线，进行100%尺寸检验和材料可追溯。所有48个活塞和16个涡轮增压器盘均在公差范围内交付，尺寸合格率达99.7%。项目的成功促成了三年框架协议。',
         rating: 5,
       },
@@ -803,7 +803,7 @@ async function main() {
 
   // ── 9. Site Settings ────────────────────────────────────────
   const settings: { id: string; key: string; value: string }[] = [
-    { id: 'f0000000-0000-4000-8000-000000000001', key: 'company_name', value: 'YuJiang Ship Technology' },
+    { id: 'f0000000-0000-4000-8000-000000000001', key: 'company_name', value: 'YuJiang ShipTechnology' },
     { id: 'f0000000-0000-4000-8000-000000000002', key: 'company_name_zh', value: '禺疆船艇科技' },
     { id: 'f0000000-0000-4000-8000-000000000003', key: 'company_phone', value: '+86-574-8765-4321' },
     { id: 'f0000000-0000-4000-8000-000000000004', key: 'company_email', value: 'info@yujiangshiptech.com' },

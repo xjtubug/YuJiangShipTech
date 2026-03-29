@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Upload, Send, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Send, Loader2, FileCheck, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useInquiryStore } from '@/lib/store';
 
@@ -77,6 +77,10 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [attachmentName, setAttachmentName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-populate from inquiry store
   useEffect(() => {
@@ -182,6 +186,7 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
           })),
         techRequirements: techRequirements || undefined,
         message: message || undefined,
+        attachmentUrl: attachmentUrl || undefined,
       };
 
       const res = await fetch('/api/inquiry', {
@@ -487,30 +492,84 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
           />
         </div>
 
-        {/* ── File Upload Placeholder ── */}
+        {/* ── File Upload ── */}
         <div>
           <label className={labelClass}>{t('uploadFile')}</label>
-          <div className="border-2 border-dashed border-primary-200 rounded-xl p-8 text-center bg-primary-50 hover:border-secondary-400 transition-colors cursor-pointer">
-            <Upload className="w-10 h-10 text-primary-300 mx-auto mb-3" />
-            <p className="text-primary-500 text-sm">{t('uploadHint')}</p>
-            <p className="text-primary-400 text-xs mt-1">
-              PDF, DWG, STEP, JPG, PNG
-            </p>
-          </div>
+          {attachmentUrl ? (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
+              <FileCheck className="w-5 h-5 text-green-600" />
+              <span className="text-sm text-green-800 flex-1 truncate">{attachmentName}</span>
+              <button
+                type="button"
+                onClick={() => { setAttachmentUrl(''); setAttachmentName(''); }}
+                className="p-1 text-red-400 hover:text-red-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-primary-200 rounded-xl p-8 text-center bg-primary-50 hover:border-secondary-400 transition-colors cursor-pointer"
+            >
+              {uploading ? (
+                <Loader2 className="w-10 h-10 text-secondary-400 mx-auto mb-3 animate-spin" />
+              ) : (
+                <Upload className="w-10 h-10 text-primary-300 mx-auto mb-3" />
+              )}
+              <p className="text-primary-500 text-sm">{uploading ? 'Uploading...' : t('uploadHint')}</p>
+              <p className="text-primary-400 text-xs mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP</p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.dwg,.step"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 10 * 1024 * 1024) {
+                toast.error('File too large (max 10MB)');
+                return;
+              }
+              setUploading(true);
+              try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error('Upload failed');
+                const data = await res.json();
+                setAttachmentUrl(data.url);
+                setAttachmentName(file.name);
+                toast.success('File uploaded successfully');
+              } catch {
+                toast.error('File upload failed');
+              } finally {
+                setUploading(false);
+                e.target.value = '';
+              }
+            }}
+          />
         </div>
 
         {/* ── Submit ── */}
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full sm:w-auto gap-2 text-lg px-10 py-4 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="btn-primary w-full sm:w-auto gap-2 text-lg px-10 py-4 disabled:opacity-60 disabled:cursor-not-allowed relative"
         >
           {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>{locale === 'zh' ? '提交中...' : 'Submitting...'}</span>
+            </>
           ) : (
-            <Send className="w-5 h-5" />
+            <>
+              <Send className="w-5 h-5" />
+              {t('title')}
+            </>
           )}
-          {loading ? '...' : t('title')}
         </button>
       </form>
     </motion.div>

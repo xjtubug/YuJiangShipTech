@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   ShoppingCart,
@@ -39,6 +40,20 @@ interface Review {
   createdAt: string;
 }
 
+interface ExpertReviewData {
+  id: string;
+  content: string;
+  rating: number;
+  createdAt: string;
+  expert: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    bio?: string | null;
+    title?: string | null;
+  };
+}
+
 interface ProductData {
   id: string;
   slug: string;
@@ -67,6 +82,7 @@ interface ProductData {
     nameAr: string;
   };
   reviews: Review[];
+  expertReviews?: ExpertReviewData[];
 }
 
 interface RelatedProduct {
@@ -439,27 +455,95 @@ export default function ProductDetail({
         </div>
       </div>
 
-      {/* Expert Recommendation */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-4 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl border border-primary-100"
-      >
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-primary-700 rounded-full flex items-center justify-center flex-shrink-0">
-            <MessageSquareQuote className="w-6 h-6 text-white" />
+      {/* Expert Reviews */}
+      {product.expertReviews && product.expertReviews.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-4 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl border border-primary-100"
+        >
+          <h3 className="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <MessageSquareQuote className="w-5 h-5" />
+            {t('expertRecommendation')}
+          </h3>
+          <div className="space-y-4">
+            {product.expertReviews.map((er) => (
+              <div key={er.id} className="flex items-start gap-4">
+                <div className="relative group flex-shrink-0">
+                  {er.expert.avatar ? (
+                    <Image
+                      src={er.expert.avatar}
+                      alt={er.expert.name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-primary-200 cursor-pointer"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-primary-700 rounded-full flex items-center justify-center text-white font-bold cursor-pointer">
+                      {er.expert.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Tooltip on hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="flex items-center gap-3 mb-2">
+                      {er.expert.avatar ? (
+                        <Image src={er.expert.avatar} alt={er.expert.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 bg-primary-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {er.expert.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-primary-800 text-sm">{er.expert.name}</p>
+                        {er.expert.title && <p className="text-xs text-gray-500">{er.expert.title}</p>}
+                      </div>
+                    </div>
+                    {er.expert.bio && <p className="text-xs text-gray-600 leading-relaxed">{er.expert.bio}</p>}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-3 h-3 bg-white border-b border-r border-gray-100 rotate-45"></div>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-primary-800 text-sm">{er.expert.name}</span>
+                    {er.expert.title && <span className="text-xs text-gray-500">· {er.expert.title}</span>}
+                    <div className="flex items-center gap-0.5 ml-auto">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span key={i} className={`text-xs ${i < er.rating ? 'text-yellow-500' : 'text-gray-300'}`}>★</span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-primary-600 leading-relaxed">{er.content}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div>
-            <h3 className="font-semibold text-primary-800 mb-1">
-              {t('expertRecommendation')}
-            </h3>
-            <p className="text-sm text-primary-600 leading-relaxed">
-              {t('expertRecommendationDesc')}
-            </p>
+        </motion.div>
+      )}
+
+      {/* No expert reviews - show generic recommendation */}
+      {(!product.expertReviews || product.expertReviews.length === 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-4 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl border border-primary-100"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-primary-700 rounded-full flex items-center justify-center flex-shrink-0">
+              <MessageSquareQuote className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary-800 mb-1">
+                {t('expertRecommendation')}
+              </h3>
+              <p className="text-sm text-primary-600 leading-relaxed">
+                {t('expertRecommendationDesc')}
+              </p>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (

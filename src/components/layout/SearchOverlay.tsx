@@ -2,26 +2,38 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Loader2, Package } from 'lucide-react';
 import { useSearchStore } from '@/lib/store';
-import Image from 'next/image';
 // utility imports available if needed
 
 interface SearchResult {
   id: string;
-  name: string;
   slug: string;
-  category: string;
-  image?: string;
-  price?: number;
-  currency?: string;
+  nameEn: string;
+  nameZh: string;
+  nameJa: string;
+  nameAr: string;
+  category: { slug: string; nameEn: string; nameZh: string };
+  images: string;
+  priceUsd: number;
 }
 
 export default function SearchOverlay() {
   const t = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
+
+  const getLocaleName = (result: SearchResult) => {
+    const map: Record<string, string> = { en: result.nameEn, zh: result.nameZh, ja: result.nameJa, ar: result.nameAr };
+    return map[locale] || result.nameEn;
+  };
+
+  const getLocaleCategoryName = (result: SearchResult) => {
+    if (locale === 'zh') return result.category?.nameZh || result.category?.nameEn || '';
+    return result.category?.nameEn || '';
+  };
 
   const { isOpen, toggle, query, setQuery } = useSearchStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,30 +156,20 @@ export default function SearchOverlay() {
                           onClick={() => handleResultClick(result)}
                           className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-b-0"
                         >
-                          {result.image ? (
-                            <Image
-                              src={result.image}
-                              alt={result.name}
-                              width={56}
-                              height={56}
-                              className="w-14 h-14 rounded-lg object-cover bg-gray-100"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-lg bg-primary-50 flex items-center justify-center">
-                              <Package className="w-6 h-6 text-primary-300" />
-                            </div>
-                          )}
+                          <div className="w-14 h-14 rounded-lg bg-primary-50 flex items-center justify-center">
+                            <Package className="w-6 h-6 text-primary-300" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-primary-800 truncate">
-                              {result.name}
+                              {getLocaleName(result)}
                             </p>
                             <p className="text-sm text-primary-400 truncate">
-                              {result.category}
+                              {getLocaleCategoryName(result)}
                             </p>
                           </div>
-                          {result.price != null && (
+                          {result.priceUsd != null && (
                             <span className="text-sm font-semibold text-accent-600 shrink-0">
-                              ${result.price.toLocaleString()}
+                              ${result.priceUsd.toLocaleString()}
                             </span>
                           )}
                         </button>

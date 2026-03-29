@@ -51,7 +51,7 @@ export default function AdminLayout({
         </div>
         <div>
           <h1 className="text-white font-bold text-sm leading-tight">YuJiang</h1>
-          <p className="text-primary-300 text-xs">Ship Technology</p>
+          <p className="text-primary-300 text-xs">ShipTechnology</p>
         </div>
       </div>
 

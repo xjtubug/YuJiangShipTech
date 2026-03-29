@@ -1,0 +1,496 @@
+'use client';
+
+import { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { motion } from 'framer-motion';
+import {
+  ShoppingCart,
+  FileText,
+  Package,
+  GitCompareArrows,
+  Play,
+  Download,
+  MessageSquareQuote,
+  Clock,
+  Boxes,
+  ChevronRight,
+  Anchor,
+  Gauge,
+  Compass,
+  ShieldCheck,
+  Droplets,
+} from 'lucide-react';
+import ShareButtons from '@/components/common/ShareButtons';
+import ProductSpecs from './ProductSpecs';
+import ProductReviews from './ProductReviews';
+import ProductCard from './ProductCard';
+import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
+import { formatPrice, convertCurrency, cn } from '@/lib/utils';
+
+interface Review {
+  id: string;
+  author: string;
+  company?: string | null;
+  country?: string | null;
+  rating: number;
+  contentEn: string;
+  contentZh: string;
+  createdAt: string;
+}
+
+interface ExpertReviewData {
+  id: string;
+  content: string;
+  rating: number;
+  createdAt: string;
+  expert: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    bio?: string | null;
+    title?: string | null;
+  };
+}
+
+interface ProductData {
+  id: string;
+  slug: string;
+  sku: string;
+  nameEn: string;
+  nameZh: string;
+  nameJa: string;
+  nameAr: string;
+  descEn: string;
+  descZh: string;
+  descJa: string;
+  descAr: string;
+  specsJson: string;
+  priceUsd: number;
+  moq: number;
+  leadTimeDays: number;
+  images: string;
+  videoUrl?: string | null;
+  pdfUrl?: string | null;
+  featured: boolean;
+  category: {
+    slug: string;
+    nameEn: string;
+    nameZh: string;
+    nameJa: string;
+    nameAr: string;
+  };
+  reviews: Review[];
+  expertReviews?: ExpertReviewData[];
+}
+
+interface RelatedProduct {
+  id: string;
+  slug: string;
+  sku: string;
+  nameEn: string;
+  nameZh: string;
+  nameJa: string;
+  nameAr: string;
+  descEn: string;
+  descZh: string;
+  descJa: string;
+  descAr: string;
+  priceUsd: number;
+  moq: number;
+  leadTimeDays: number;
+  specsJson: string;
+  featured: boolean;
+  images: string;
+  category: {
+    slug: string;
+    nameEn: string;
+    nameZh: string;
+    nameJa: string;
+    nameAr: string;
+  };
+}
+
+interface ProductDetailProps {
+  product: ProductData;
+  relatedProducts: RelatedProduct[];
+  locale: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getLocalizedField(obj: any, field: string, locale: string): string {
+  const key = `${field}${locale.charAt(0).toUpperCase() + locale.slice(1)}`;
+  return obj[key] || obj[`${field}En`] || '';
+}
+
+const CATEGORY_ICONS: Record<string, typeof Package> = {
+  valves: Gauge,
+  pumps: Droplets,
+  deck: Anchor,
+  navigation: Compass,
+  safety: ShieldCheck,
+};
+
+function getCategoryIcon(categorySlug: string) {
+  const match = Object.entries(CATEGORY_ICONS).find(([key]) =>
+    categorySlug.toLowerCase().includes(key)
+  );
+  return match ? match[1] : Package;
+}
+
+const TABS = ['description', 'specifications', 'videoDemo', 'customerReviews', 'downloadPdf'] as const;
+type Tab = (typeof TABS)[number];
+
+export default function ProductDetail({
+  product,
+  relatedProducts,
+  locale,
+}: ProductDetailProps) {
+  const t = useTranslations('products');
+  const tc = useTranslations('common');
+  const currentLocale = useLocale();
+  const effectiveLocale = locale || currentLocale;
+
+  const [activeTab, setActiveTab] = useState<Tab>('description');
+  const [mainImageIndex, setMainImageIndex] = useState(0);
+
+  const addItem = useInquiryStore((s) => s.addItem);
+  const currency = useCurrencyStore((s) => s.currency);
+  const { products: compareProducts, addProduct, removeProduct, setProductData } =
+    useCompareStore();
+  const isCompared = compareProducts.includes(product.id);
+
+  const productName = getLocalizedField(product, 'name', effectiveLocale);
+  const productDesc = getLocalizedField(product, 'desc', effectiveLocale);
+  const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
+  const convertedPrice = convertCurrency(product.priceUsd, currency);
+  const CategoryIcon = getCategoryIcon(product.category.slug);
+
+  // Parse images array
+  let imagesList: string[] = [];
+  try {
+    imagesList = JSON.parse(product.images || '[]');
+  } catch {
+    imagesList = [];
+  }
+  const placeholderCount = Math.max(3, imagesList.length || 3);
+
+  const siteUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const handleAddToInquiry = () => {
+    addItem({
+      productId: product.id,
+      productName: product.nameEn,
+      quantity: product.moq || 1,
+      unit: 'pcs',
+    });
+  };
+
+  const handleToggleCompare = () => {
+    if (isCompared) {
+      removeProduct(product.id);
+    } else {
+      addProduct(product.id);
+      setProductData(product.id, {
+        id: product.id,
+        slug: product.slug,
+        nameEn: product.nameEn,
+        nameZh: product.nameZh,
+        nameJa: product.nameJa,
+        nameAr: product.nameAr,
+        priceUsd: product.priceUsd,
+        moq: product.moq,
+        leadTimeDays: product.leadTimeDays,
+        categoryName: product.category.nameEn,
+        specsJson: product.specsJson,
+        sku: product.sku,
+      });
+    }
+  };
+
+  return (
+    <div>
+      {/* Top section: Image gallery + product info */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        {/* Image gallery */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Main image */}
+          <div className="aspect-square bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
+            <CategoryIcon className="h-32 w-32 text-primary-300" />
+          </div>
+          {/* Thumbnails */}
+          <div className="grid grid-cols-4 gap-3">
+            {Array.from({ length: placeholderCount }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setMainImageIndex(i)}
+                className={cn(
+                  'aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg flex items-center justify-center transition-all',
+                  mainImageIndex === i
+                    ? 'ring-2 ring-secondary-500 ring-offset-2'
+                    : 'opacity-60 hover:opacity-100'
+                )}
+              >
+                <CategoryIcon className="h-8 w-8 text-primary-300" />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Product info */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="space-y-6"
+        >
+          {/* Breadcrumb-like category */}
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/products"
+              className="text-secondary-600 hover:text-secondary-700"
+            >
+              {t('title')}
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-primary-300" />
+            <Link
+              href={`/products?category=${product.category.slug}`}
+              className="text-secondary-600 hover:text-secondary-700"
+            >
+              {categoryName}
+            </Link>
+          </div>
+
+          {/* Name & SKU */}
+          <div>
+            <h1 className="heading-2 mb-2">{productName}</h1>
+            <p className="text-sm text-primary-400">
+              {t('sku')}: {product.sku}
+            </p>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-bold text-accent-600">
+              {formatPrice(convertedPrice, currency)}
+            </span>
+            {currency !== 'USD' && (
+              <span className="text-sm text-primary-400">
+                ({formatPrice(product.priceUsd, 'USD')})
+              </span>
+            )}
+          </div>
+
+          {/* MOQ & Lead Time */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2 bg-primary-50 px-4 py-2 rounded-lg">
+              <Boxes className="w-4 h-4 text-primary-500" />
+              <span className="text-sm text-primary-700">
+                <span className="font-medium">{tc('moq')}:</span> {product.moq}{' '}
+                {tc('pcs')}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 bg-primary-50 px-4 py-2 rounded-lg">
+              <Clock className="w-4 h-4 text-primary-500" />
+              <span className="text-sm text-primary-700">
+                <span className="font-medium">{tc('leadTime')}:</span>{' '}
+                {product.leadTimeDays} {tc('days')}
+              </span>
+            </div>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/contact" className="btn-primary gap-2">
+              <FileText className="w-4 h-4" />
+              {t('requestQuote')}
+            </Link>
+            <button onClick={handleAddToInquiry} className="btn-secondary gap-2">
+              <ShoppingCart className="w-4 h-4" />
+              {tc('addToInquiry')}
+            </button>
+            <button
+              onClick={handleToggleCompare}
+              className={cn(
+                'btn-outline gap-2',
+                isCompared && 'bg-secondary-600 text-white border-secondary-600 hover:bg-secondary-700'
+              )}
+            >
+              <GitCompareArrows className="w-4 h-4" />
+              {tc('compare')}
+            </button>
+          </div>
+
+          {/* Share */}
+          <ShareButtons
+            url={siteUrl}
+            title={productName}
+            description={productDesc}
+          />
+        </motion.div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-12">
+        <div className="border-b border-slate-200">
+          <nav className="flex gap-1 overflow-x-auto scrollbar-hide -mb-px">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors',
+                  activeTab === tab
+                    ? 'border-secondary-600 text-secondary-700'
+                    : 'border-transparent text-primary-400 hover:text-primary-600 hover:border-primary-200'
+                )}
+              >
+                {t(tab)}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="py-8">
+          {/* Description */}
+          {activeTab === 'description' && (
+            <motion.div
+              key="description"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="prose prose-primary max-w-none"
+            >
+              <p className="text-primary-600 leading-relaxed whitespace-pre-line">
+                {productDesc}
+              </p>
+            </motion.div>
+          )}
+
+          {/* Specifications */}
+          {activeTab === 'specifications' && (
+            <motion.div
+              key="specs"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <ProductSpecs specsJson={product.specsJson} />
+            </motion.div>
+          )}
+
+          {/* Video Demo */}
+          {activeTab === 'videoDemo' && (
+            <motion.div
+              key="video"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {product.videoUrl ? (
+                <div className="aspect-video rounded-xl overflow-hidden bg-black">
+                  <iframe
+                    src={product.videoUrl.replace('watch?v=', 'embed/')}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={productName}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video rounded-xl bg-slate-100 flex flex-col items-center justify-center text-primary-400">
+                  <Play className="w-16 h-16 mb-3" />
+                  <p className="text-sm">{t('videoDemo')}</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Reviews */}
+          {activeTab === 'customerReviews' && (
+            <motion.div
+              key="reviews"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <ProductReviews reviews={product.reviews} />
+            </motion.div>
+          )}
+
+          {/* Download */}
+          {activeTab === 'downloadPdf' && (
+            <motion.div
+              key="download"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center py-8"
+            >
+              <FileText className="w-16 h-16 text-primary-300 mb-4" />
+              <h3 className="text-lg font-semibold text-primary-800 mb-2">
+                {t('downloadPdf')}
+              </h3>
+              <p className="text-sm text-primary-500 mb-6 text-center max-w-md">
+                {productName} — Technical Datasheet (PDF)
+              </p>
+              {product.pdfUrl ? (
+                <a
+                  href={product.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  {tc('download')} PDF
+                </a>
+              ) : (
+                <button disabled className="btn-primary gap-2 opacity-50 cursor-not-allowed">
+                  <Download className="w-4 h-4" />
+                  PDF Not Available
+                </button>
+              )}
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* Expert Recommendation */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="mt-4 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl border border-primary-100"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-primary-700 rounded-full flex items-center justify-center flex-shrink-0">
+            <MessageSquareQuote className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-primary-800 mb-1">
+              {t('expertRecommendation')}
+            </h3>
+            <p className="text-sm text-primary-600 leading-relaxed">
+              {t('expertRecommendationDesc')}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-16">
+          <h2 className="heading-2 mb-8">{t('relatedProducts')}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((rp) => (
+              <ProductCard
+                key={rp.id}
+                product={rp}
+                locale={effectiveLocale}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
