@@ -26,6 +26,7 @@ import {
   Briefcase,
   Award,
   Video,
+  Sparkles,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -411,6 +412,78 @@ export default function CMSPage() {
   const [showCertModal, setShowCertModal] = useState(false);
   const [editingCert, setEditingCert] = useState<CertificateItem | null>(null);
   const [certForm, setCertForm] = useState(EMPTY_CERT);
+
+  // --- Translation state ---
+  const [translatingNews, setTranslatingNews] = useState(false);
+  const [translatingCase, setTranslatingCase] = useState(false);
+
+  // Auto-translate helper: zh → en for news form
+  const handleTranslateNews = async () => {
+    const hasTitle = !!newsForm.titleZh.trim();
+    const hasContent = !!newsForm.contentZh.trim();
+    if (!hasTitle && !hasContent) {
+      toast.error('请先填写中文标题或中文内容');
+      return;
+    }
+    setTranslatingNews(true);
+    try {
+      const texts: Record<string, string> = {};
+      if (hasTitle) texts.titleZh = newsForm.titleZh;
+      if (hasContent) texts.contentZh = newsForm.contentZh;
+      const res = await fetch('/api/admin/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts, from: 'zh', to: 'en' }),
+      });
+      if (!res.ok) throw new Error('翻译请求失败');
+      const data = await res.json();
+      const t = data.translated as Record<string, string>;
+      setNewsForm((prev) => ({
+        ...prev,
+        ...(t.titleZh ? { titleEn: t.titleZh } : {}),
+        ...(t.contentZh ? { contentEn: t.contentZh } : {}),
+      }));
+      toast.success('自动翻译完成，请检查并修正');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '翻译失败');
+    } finally {
+      setTranslatingNews(false);
+    }
+  };
+
+  // Auto-translate helper: zh → en for case form
+  const handleTranslateCase = async () => {
+    const hasTitle = !!caseForm.titleZh.trim();
+    const hasContent = !!caseForm.contentZh.trim();
+    if (!hasTitle && !hasContent) {
+      toast.error('请先填写中文标题或中文内容');
+      return;
+    }
+    setTranslatingCase(true);
+    try {
+      const texts: Record<string, string> = {};
+      if (hasTitle) texts.titleZh = caseForm.titleZh;
+      if (hasContent) texts.contentZh = caseForm.contentZh;
+      const res = await fetch('/api/admin/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts, from: 'zh', to: 'en' }),
+      });
+      if (!res.ok) throw new Error('翻译请求失败');
+      const data = await res.json();
+      const t = data.translated as Record<string, string>;
+      setCaseForm((prev) => ({
+        ...prev,
+        ...(t.titleZh ? { titleEn: t.titleZh } : {}),
+        ...(t.contentZh ? { contentEn: t.contentZh } : {}),
+      }));
+      toast.success('自动翻译完成，请检查并修正');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '翻译失败');
+    } finally {
+      setTranslatingCase(false);
+    }
+  };
 
   /* ---------------------------------------------------------------- */
   /*  Data Fetching                                                   */
@@ -1054,7 +1127,19 @@ export default function CMSPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
               <h3 className="font-semibold text-gray-800">{editingNews ? '编辑新闻' : '新增新闻'}</h3>
-              <button onClick={() => setShowNewsModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTranslateNews}
+                  disabled={translatingNews}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
+                  title="根据中文标题和内容，自动翻译为英文"
+                >
+                  {translatingNews ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {translatingNews ? '翻译中…' : '中文→英文'}
+                </button>
+                <button onClick={() => setShowNewsModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              </div>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -1174,7 +1259,19 @@ export default function CMSPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
               <h3 className="font-semibold text-gray-800">{editingCase ? '编辑案例' : '新增案例'}</h3>
-              <button onClick={() => setShowCaseModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTranslateCase}
+                  disabled={translatingCase}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
+                  title="根据中文标题和内容，自动翻译为英文"
+                >
+                  {translatingCase ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {translatingCase ? '翻译中…' : '中文→英文'}
+                </button>
+                <button onClick={() => setShowCaseModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              </div>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">

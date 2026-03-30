@@ -318,6 +318,7 @@ function ProductFormModal({
     };
   });
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'descriptions' | 'media' | 'advanced'>('general');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -327,6 +328,46 @@ function ProductFormModal({
 
   const set = (key: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  // Auto-translate Chinese fields → en/ja/ar
+  const handleAutoTranslate = async () => {
+    const hasName = !!form.nameZh.trim();
+    const hasDesc = !!form.descZh.trim();
+    if (!hasName && !hasDesc) {
+      toast.error('请先填写中文名称或中文描述');
+      return;
+    }
+    setTranslating(true);
+    try {
+      const texts: Record<string, string> = {};
+      if (hasName) texts.nameZh = form.nameZh;
+      if (hasDesc) texts.descZh = form.descZh;
+
+      const res = await fetch('/api/admin/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts, from: 'zh', targets: ['en', 'ja', 'ar'] }),
+      });
+      if (!res.ok) throw new Error('翻译请求失败');
+      const data = await res.json();
+      const t = data.translated as Record<string, Record<string, string>>;
+
+      setForm((prev) => ({
+        ...prev,
+        ...(t.en?.nameEn ? { nameEn: t.en.nameEn } : {}),
+        ...(t.en?.descEn ? { descEn: t.en.descEn } : {}),
+        ...(t.ja?.nameJa ? { nameJa: t.ja.nameJa } : {}),
+        ...(t.ja?.descJa ? { descJa: t.ja.descJa } : {}),
+        ...(t.ar?.nameAr ? { nameAr: t.ar.nameAr } : {}),
+        ...(t.ar?.descAr ? { descAr: t.ar.descAr } : {}),
+      }));
+      toast.success('自动翻译完成，请检查并修正');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '翻译失败');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const setCnyPrice = (cny: string) => {
     const cnyNum = parseFloat(cny) || 0;
@@ -580,6 +621,16 @@ function ProductFormModal({
                   <input className={inputCls} dir="rtl" value={form.nameAr} onChange={(e) => set('nameAr', e.target.value)} />
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={handleAutoTranslate}
+                disabled={translating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
+                title="根据中文名称和描述，自动翻译为英文、日文、阿拉伯文"
+              >
+                {translating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {translating ? '翻译中…' : '中文 → 自动翻译 (En/Ja/Ar)'}
+              </button>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelCls}>SKU编号 *</label>
@@ -637,9 +688,19 @@ function ProductFormModal({
           {/* Descriptions Tab */}
           {activeTab === 'descriptions' && (
             <>
+              <button
+                type="button"
+                onClick={handleAutoTranslate}
+                disabled={translating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
+                title="根据中文描述，自动翻译为英文、日文、阿拉伯文"
+              >
+                {translating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {translating ? '翻译中…' : '中文 → 自动翻译 (En/Ja/Ar)'}
+              </button>
               {([
-                ['descEn', '产品描述 (English)'],
                 ['descZh', '产品描述 (中文)'],
+                ['descEn', '产品描述 (English)'],
                 ['descJa', '产品描述 (日本語)'],
                 ['descAr', '产品描述 (العربية)'],
               ] as const).map(([key, label]) => (
