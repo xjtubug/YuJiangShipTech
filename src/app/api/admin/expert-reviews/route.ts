@@ -2,10 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 // GET: List expert reviews (optional productId filter)
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["expert"]);
+
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId");
 
@@ -26,6 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ reviews, total: reviews.length });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Expert reviews list error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -37,6 +41,8 @@ export async function GET(request: NextRequest) {
 // POST: Create expert review
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["expert"]);
+
     const body = await request.json();
     const { expertId, productId, content, rating } = body;
 
@@ -94,6 +100,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(review, { status: 201 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Expert review create error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

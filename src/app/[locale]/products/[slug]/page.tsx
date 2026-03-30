@@ -2,9 +2,15 @@ import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
+import { getProductMetadata } from '@/lib/metadata';
+import { ProductSchema, BreadcrumbSchema } from '@/components/common/StructuredData';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import ProductDetail from '@/components/products/ProductDetail';
 import CompareDrawer from '@/components/products/CompareDrawer';
+export const revalidate = 300;
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com';
 
 export async function generateMetadata({
   params,
@@ -25,6 +31,8 @@ export async function generateMetadata({
       descAr: true,
       priceUsd: true,
       sku: true,
+      images: true,
+      slug: true,
     },
   });
 
@@ -35,15 +43,16 @@ export async function generateMetadata({
   const name = (product[nameKey] as string) || product.nameEn;
   const description = (product[descKey] as string) || product.descEn;
 
-  return {
-    title: name,
-    description: description.slice(0, 160),
-    openGraph: {
-      title: name,
-      description: description.slice(0, 160),
-      type: 'website',
-    },
-  };
+  let firstImage: string | undefined;
+  try {
+    const imgs = JSON.parse(product.images);
+    if (Array.isArray(imgs) && imgs.length > 0) firstImage = imgs[0];
+  } catch { /* ignore */ }
+
+  return getProductMetadata(
+    { name, description, slug: product.slug, image: firstImage, price: product.priceUsd, sku: product.sku },
+    locale
+  );
 }
 
 export default async function ProductDetailPage({
@@ -130,50 +139,11 @@ export default async function ProductDetailPage({
       ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length
       : undefined;
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.nameEn,
-    description: product.descEn,
-    sku: product.sku,
-    brand: {
-      '@type': 'Brand',
-      name: 'YuJiang ShipTechnology',
-    },
-    offers: {
-      '@type': 'Offer',
-      priceCurrency: 'USD',
-      price: product.priceUsd,
-      availability: 'https://schema.org/InStock',
-      seller: {
-        '@type': 'Organization',
-        name: 'YuJiang ShipTechnology',
-      },
-    },
-    ...(avgRating
-      ? {
-          aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: avgRating.toFixed(1),
-            reviewCount: product.reviews.length,
-          },
-        }
-      : {}),
-    ...(product.reviews.length > 0
-      ? {
-          review: product.reviews.map((r) => ({
-            '@type': 'Review',
-            author: { '@type': 'Person', name: r.author },
-            reviewRating: {
-              '@type': 'Rating',
-              ratingValue: r.rating,
-            },
-            reviewBody: r.contentEn,
-            datePublished: r.createdAt.toISOString(),
-          })),
-        }
-      : {}),
-  };
+  let productImage: string | undefined;
+  try {
+    const imgs = JSON.parse(product.images);
+    if (Array.isArray(imgs) && imgs.length > 0) productImage = imgs[0];
+  } catch { /* ignore */ }
 
   // Breadcrumb
   const breadcrumbItems = [
@@ -184,9 +154,29 @@ export default async function ProductDetailPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      <ProductSchema
+        name={productName}
+        description={(product.descEn || '').slice(0, 300)}
+        sku={product.sku}
+        image={productImage}
+        price={product.priceUsd}
+        url={`${SITE_URL}/${locale}/products/${slug}`}
+        category={categoryName}
+        rating={avgRating ? { value: avgRating, count: product.reviews.length } : undefined}
+        reviews={product.reviews.map((r) => ({
+          author: r.author,
+          rating: r.rating,
+          body: r.contentEn,
+          date: r.createdAt.toISOString(),
+        }))}
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: tNav('products'), url: '/products' },
+          { name: categoryName, url: `/products?category=${product.category.slug}` },
+          { name: productName },
+        ]}
+        locale={locale}
       />
 
       <div className="bg-gradient-to-b from-primary-50 to-white">

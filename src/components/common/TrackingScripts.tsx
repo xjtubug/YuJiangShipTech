@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useCookieConsentStore } from '@/lib/store';
 
 function isValidId(value: string | undefined): value is string {
@@ -13,10 +14,19 @@ function isValidId(value: string | undefined): value is string {
 export default function TrackingScripts() {
   const { consent } = useCookieConsentStore();
   const [canLoad, setCanLoad] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setCanLoad(consent === 'accepted');
   }, [consent]);
+
+  // Track route changes in GA4
+  useEffect(() => {
+    if (!canLoad) return;
+    const gaId = process.env.NEXT_PUBLIC_GA_ID;
+    if (!isValidId(gaId)) return;
+    window.gtag?.('config', gaId, { page_path: pathname });
+  }, [pathname, canLoad]);
 
   if (!canLoad) return null;
 
@@ -41,6 +51,7 @@ export default function TrackingScripts() {
               gtag('js', new Date());
               gtag('config', '${gaId}', {
                 page_path: window.location.pathname,
+                send_page_view: true,
               });
             `}
           </Script>

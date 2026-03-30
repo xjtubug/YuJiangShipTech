@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { generateInquiryNumber } from '@/lib/utils';
 import { sendInquiryNotification } from '@/lib/email';
+import { sendWelcomeEmail } from '@/lib/email-automation';
 
 interface InquiryItemInput {
   productId?: string;
@@ -69,7 +70,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Auto-create or link customer
+    let isNewCustomer = false;
     try {
+      const existingCustomer = await prisma.customer.findUnique({ where: { email } });
+      isNewCustomer = !existingCustomer;
+
       const customer = await prisma.customer.upsert({
         where: { email },
         update: {
@@ -93,6 +98,12 @@ export async function POST(request: NextRequest) {
         where: { id: inquiry.id },
         data: { customerId: customer.id },
       });
+
+      // Send welcome email for first-time customers (non-blocking)
+      if (isNewCustomer) {
+        sendWelcomeEmail({ email: customer.email, name: customer.name, company: customer.company })
+          .catch((err) => console.error('Welcome email error:', err));
+      }
     } catch (e) {
       console.error('Failed to upsert customer:', e);
     }

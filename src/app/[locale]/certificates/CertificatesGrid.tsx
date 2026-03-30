@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Award, Download, X, Shield, CalendarDays, Building2 } from 'lucide-react';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/image-utils';
 
 interface Certificate {
   id: string;
@@ -65,7 +66,7 @@ export default function CertificatesGrid({ certificates, locale }: Props) {
             <div className="w-full aspect-[3/4] rounded-lg bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-200 flex items-center justify-center mb-4 relative overflow-hidden">
               {cert.image ? (
                 <Image
-                  src={cert.image}
+                  src={getImageUrl(cert.image)}
                   alt={cert.name}
                   width={600}
                   height={800}
@@ -140,7 +141,7 @@ export default function CertificatesGrid({ certificates, locale }: Props) {
                 <div className="h-48 bg-gradient-to-br from-accent-100 to-primary-100 flex items-center justify-center rounded-t-2xl">
                   {selectedCert.image ? (
                     <Image
-                      src={selectedCert.image}
+                      src={getImageUrl(selectedCert.image)}
                       alt={selectedCert.name}
                       width={600}
                       height={300}

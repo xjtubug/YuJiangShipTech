@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
+    await requireAuth(["viewer"]);
+
     const { slug } = params;
     const id = slug;
 
@@ -33,6 +36,7 @@ export async function GET(
 
     return NextResponse.json(visitor);
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Admin visitor detail API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

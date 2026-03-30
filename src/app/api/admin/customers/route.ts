@@ -2,10 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 // GET: List customers with pagination, search, filters, and stats
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)));
@@ -86,6 +89,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Customers list error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -94,6 +98,8 @@ export async function GET(request: NextRequest) {
 // POST: Create a new customer
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const body = await request.json();
     const { email, name, company, phone, country, tags, notes } = body;
 
@@ -129,6 +135,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Customer create error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -137,6 +144,8 @@ export async function POST(request: NextRequest) {
 // PUT: Update customer (tags, notes, etc.)
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -169,6 +178,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(customer);
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Customer update error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -177,6 +187,8 @@ export async function PUT(request: NextRequest) {
 // DELETE: Remove customer by ID
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -195,6 +207,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Customer delete error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

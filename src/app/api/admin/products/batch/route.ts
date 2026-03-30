@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 function generateSlug(name: string): string {
   return name
@@ -43,6 +44,8 @@ interface BatchError {
 // POST: Batch upload products
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const body = await request.json();
     const { products } = body;
 
@@ -136,6 +139,7 @@ export async function POST(request: NextRequest) {
 
         createdCount++;
       } catch (err) {
+    if (err instanceof Response) return err;
         const message = err instanceof Error ? err.message : "Unknown error";
         errors.push({ index: i, sku: item.sku, error: message });
       }
@@ -147,6 +151,7 @@ export async function POST(request: NextRequest) {
       errors,
     }, { status: createdCount > 0 ? 201 : 400 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Batch upload error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

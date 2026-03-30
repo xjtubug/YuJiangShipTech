@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Settings, Save, Loader2, Plus, Trash2, Upload, Image as ImageIcon, Mail, Building2, DollarSign, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/image-utils';
 
 interface Setting {
   id: string;
@@ -189,7 +190,7 @@ export default function SettingsPage() {
           <div className="flex flex-col sm:flex-row items-start gap-6">
             <div className="w-48 h-24 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
               {logoUrl ? (
-                <Image src={logoUrl} alt="Company Logo" width={200} height={60} className="max-w-full max-h-full object-contain p-2" />
+                <Image src={getImageUrl(logoUrl)} alt="Company Logo" width={200} height={60} className="max-w-full max-h-full object-contain p-2" />
               ) : (
                 <div className="text-center text-gray-400">
                   <ImageIcon className="w-8 h-8 mx-auto mb-1" />

@@ -2,10 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 // GET: List all expert users
 export async function GET() {
   try {
+    await requireAuth(["admin"]);
+
     const experts = await prisma.adminUser.findMany({
       where: { role: "expert" },
       select: {
@@ -24,6 +27,7 @@ export async function GET() {
 
     return NextResponse.json({ experts });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Experts list error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -35,6 +39,8 @@ export async function GET() {
 // POST: Create new expert user
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const body = await request.json();
     const { email, password, name, bio, title, avatar } = body;
 
@@ -87,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(expert, { status: 201 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Expert create error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

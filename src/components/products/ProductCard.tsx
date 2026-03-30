@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
 import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
+import { getImageUrl } from '@/lib/image-utils';
+import Image from 'next/image';
 
 interface ProductData {
   id: string;
@@ -85,6 +87,15 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
 
   const productName = getLocalizedField(product, 'name', effectiveLocale);
   const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
+  const productImages = (() => {
+    try {
+      const parsed = JSON.parse(product.images || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+  const primaryImage = productImages[0] ? getImageUrl(productImages[0]) : null;
 
   const convertedPrice = convertFromUsd(product.priceUsd, currency);
   const CategoryIcon = getCategoryIcon(product.category.slug);
@@ -147,9 +158,19 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
         <GitCompareArrows className="w-4 h-4" />
       </button>
 
-      {/* Image placeholder */}
+      {/* Product image */}
       <div className="relative h-48 bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center overflow-hidden">
-        <CategoryIcon className="h-16 w-16 text-primary-300 group-hover:scale-110 transition-transform duration-300" />
+        {primaryImage ? (
+          <Image
+            src={primaryImage}
+            alt={productName}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <CategoryIcon className="h-16 w-16 text-primary-300 group-hover:scale-110 transition-transform duration-300" />
+        )}
         {product.featured && (
           <span className="absolute top-3 left-3 flex items-center gap-1 bg-accent-500 text-white text-xs font-bold px-2 py-1 rounded">
             <Star className="h-3 w-3" />

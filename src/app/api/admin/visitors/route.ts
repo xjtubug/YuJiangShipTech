@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["viewer"]);
+
     const { searchParams } = request.nextUrl;
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)));
@@ -21,7 +24,25 @@ export async function GET(request: NextRequest) {
         orderBy: { lastVisit: 'desc' },
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          ip: true,
+          country: true,
+          region: true,
+          city: true,
+          browser: true,
+          os: true,
+          device: true,
+          language: true,
+          referrer: true,
+          utmSource: true,
+          utmMedium: true,
+          utmCampaign: true,
+          leadScore: true,
+          isHighValue: true,
+          firstVisit: true,
+          lastVisit: true,
+          visitCount: true,
           _count: {
             select: {
               pageViews: true,
@@ -40,6 +61,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Admin visitors API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

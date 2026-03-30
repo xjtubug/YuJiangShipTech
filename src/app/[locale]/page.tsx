@@ -4,9 +4,16 @@ import prisma from '@/lib/prisma';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
 
-const AdvantagesSection = dynamic(() => import('@/components/home/AdvantagesSection'));
-const CertificationsSection = dynamic(() => import('@/components/home/CertificationsSection'));
-const NewsSection = dynamic(() => import('@/components/home/NewsSection'));
+const AdvantagesSection = dynamic(() => import('@/components/home/AdvantagesSection'), {
+  loading: () => <div className="section-padding bg-white"><div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+const CertificationsSection = dynamic(() => import('@/components/home/CertificationsSection'), {
+  loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+const NewsSection = dynamic(() => import('@/components/home/NewsSection'), {
+  loading: () => <div className="section-padding bg-white"><div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+export const revalidate = 300;
 
 export default async function HomePage() {
   const t = await getTranslations('common');
@@ -14,7 +21,23 @@ export default async function HomePage() {
   const [products, news, certificates, popularProducts] = await Promise.all([
     prisma.product.findMany({
       where: { featured: true, published: true },
-      include: { category: true },
+      select: {
+        id: true,
+        slug: true,
+        nameEn: true,
+        nameZh: true,
+        nameJa: true,
+        nameAr: true,
+        sku: true,
+        descEn: true,
+        priceUsd: true,
+        moq: true,
+        featured: true,
+        images: true,
+        createdAt: true,
+        updatedAt: true,
+        category: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 8,
     }),
@@ -29,7 +52,10 @@ export default async function HomePage() {
     // Get popular products for search tags (based on page views)
     prisma.product.findMany({
       where: { published: true },
-      include: {
+      select: {
+        slug: true,
+        nameEn: true,
+        nameZh: true,
         category: true,
         _count: { select: { pageViews: true } },
       },

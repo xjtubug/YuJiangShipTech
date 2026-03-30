@@ -2,10 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 // GET: List products with pagination, search, category filter
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
@@ -55,6 +58,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Products list error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -74,6 +78,8 @@ function generateSlug(name: string): string {
 // POST: Create new product
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const body = await request.json();
 
     const {
@@ -142,6 +148,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Product create error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

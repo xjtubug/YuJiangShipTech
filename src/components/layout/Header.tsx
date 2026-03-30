@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { getImageUrl } from '@/lib/image-utils';
 import Image from 'next/image';
 
 const languages = [
@@ -24,7 +25,11 @@ const languages = [
 
 const currencies = ['USD', 'EUR', 'CNY', 'JPY', 'AED'] as const;
 
-export default function Header() {
+export default function Header({
+  initialLogoUrl = null,
+}: {
+  initialLogoUrl?: string | null;
+}) {
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
@@ -33,7 +38,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [currOpen, setCurrOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrl] = useState<string | null>(initialLogoUrl);
 
   const langRef = useRef<HTMLDivElement>(null);
   const currRef = useRef<HTMLDivElement>(null);
@@ -48,15 +53,6 @@ export default function Header() {
     { href: '/contact', label: t('contact') },
     { href: '/quote', label: t('quote') },
   ];
-
-  useEffect(() => {
-    fetch('/api/admin/settings?key=company_logo')
-      .then(res => res.json())
-      .then(data => {
-        if (data.value) setLogoUrl(data.value);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -117,7 +113,7 @@ export default function Header() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
               {logoUrl ? (
-                <Image src={logoUrl} alt="YuJiang ShipTech" width={150} height={48} className="h-9 md:h-12 w-auto object-contain" />
+                <Image src={getImageUrl(logoUrl)} alt="YuJiang ShipTech" width={150} height={48} className="h-9 md:h-12 w-auto object-contain" />
               ) : (
                 <>
                   <span className="text-2xl md:text-3xl font-extrabold text-accent-500">YuJiang</span>
@@ -301,8 +297,8 @@ export default function Header() {
                   onClick={() => setMobileOpen(false)}
                 >
                   {logoUrl ? (
-                    <Image src={logoUrl} alt="YuJiang ShipTech" width={140} height={40} className="h-8 w-auto object-contain" />
-                  ) : (
+                     <Image src={getImageUrl(logoUrl)} alt="YuJiang ShipTech" width={140} height={40} className="h-8 w-auto object-contain" />
+                   ) : (
                     <>
                       <span className="text-xl font-extrabold text-accent-500">YuJiang</span>
                       <span className="text-xl font-extrabold text-primary-700">ShipTech</span>

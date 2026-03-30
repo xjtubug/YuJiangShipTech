@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, CalendarDays, ArrowRight, Tag } from 'lucide-react';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/image-utils';
 
 interface NewsArticle {
   id: string;
@@ -110,7 +111,7 @@ export default function NewsGrid({ news, locale, categories, categoryLabels }: N
                 <div className="h-48 bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center overflow-hidden relative">
                   {article.image ? (
                     <Image
-                      src={article.image}
+                      src={getImageUrl(article.image)}
                       alt={getLocalizedTitle(article, locale)}
                       width={800}
                       height={450}

@@ -2,10 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from '@/lib/auth';
 
 // POST: Subscribe email
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const body = await request.json();
     const { email, name } = body;
 
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(subscriber, { status: 201 });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Newsletter subscribe error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -64,6 +68,8 @@ export async function POST(request: NextRequest) {
 // GET: List all subscribers (admin)
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get("active");
 
@@ -76,6 +82,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ subscribers, total: subscribers.length });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Newsletter list error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

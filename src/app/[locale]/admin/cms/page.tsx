@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/lib/image-utils';
 import {
   FileText,
   Image as ImageIcon,
@@ -154,7 +155,7 @@ function ImageUploadField({
       {value ? (
         <div className="relative group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="w-full h-40 object-cover rounded-lg border border-gray-200" />
+          <img src={getImageUrl(value)} alt="" className="w-full h-40 object-cover rounded-lg border border-gray-200" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
             <button type="button" onClick={() => inputRef.current?.click()} className="px-3 py-1.5 bg-white text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-100">更换</button>
             <button type="button" onClick={() => onChange('')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600">删除</button>
@@ -1086,7 +1087,7 @@ export default function CMSPage() {
                     <td className="px-4 py-3">
                       {item.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.image} alt="" className="w-16 h-10 object-cover rounded border border-gray-200" />
+                        <img src={getImageUrl(item.image)} alt="" className="w-16 h-10 object-cover rounded border border-gray-200" />
                       ) : (
                         <div className="w-16 h-10 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
                           <ImageIcon className="w-4 h-4 text-gray-300" />
@@ -1230,7 +1231,7 @@ export default function CMSPage() {
               <div className="aspect-video bg-gray-100 relative">
                 {item.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.image} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(item.image)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-8 h-8 text-gray-300" /></div>
                 )}
@@ -1370,7 +1371,7 @@ export default function CMSPage() {
               <div className="aspect-[4/3] bg-gray-100 relative">
                 {item.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.image} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(item.image)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center"><Award className="w-8 h-8 text-gray-300" /></div>
                 )}
@@ -1638,7 +1639,7 @@ export default function CMSPage() {
             <div key={img.key} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group">
               <div className="aspect-video bg-gray-100 relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                <img src={getImageUrl(img.url)} alt={img.name} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <a href={img.url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white rounded-lg shadow-sm mr-2">
                     <Eye className="w-4 h-4 text-gray-600" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
@@ -28,6 +28,7 @@ import ProductReviews from './ProductReviews';
 import ProductCard from './ProductCard';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
 import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
+import { getImageUrl } from '@/lib/image-utils';
 
 interface Review {
   id: string;
@@ -142,6 +143,43 @@ function getCategoryIcon(categorySlug: string) {
 const TABS = ['description', 'specifications', 'videoDemo', 'customerReviews', 'downloadPdf'] as const;
 type Tab = (typeof TABS)[number];
 
+/**
+ * Extract YouTube video ID from various URL formats and return a clean embed URL.
+ * Handles: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+ */
+function getYouTubeEmbedUrl(url: string): string {
+  if (!url) return '';
+
+  // Already an embed URL
+  if (url.includes('/embed/')) {
+    const match = url.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+  }
+
+  // youtu.be short URL
+  if (url.includes('youtu.be/')) {
+    const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+  }
+
+  // Standard youtube.com/watch?v= URL
+  try {
+    const parsed = new URL(url);
+    const videoId = parsed.searchParams.get('v');
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+  } catch {
+    // Not a valid URL, try regex
+    const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (match) {
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+  }
+
+  return url;
+}
+
 export default function ProductDetail({
   product,
   relatedProducts,
@@ -174,9 +212,14 @@ export default function ProductDetail({
   } catch {
     imagesList = [];
   }
-  const placeholderCount = Math.max(3, imagesList.length || 3);
+  const normalizedImages = imagesList.map((image) => getImageUrl(image)).filter(Boolean);
+  const placeholderCount = Math.max(3, normalizedImages.length || 3);
 
-  const siteUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const [siteUrl, setSiteUrl] = useState('');
+
+  useEffect(() => {
+    setSiteUrl(window.location.href);
+  }, []);
 
   const handleAddToInquiry = () => {
     addItem({
@@ -221,7 +264,20 @@ export default function ProductDetail({
         >
           {/* Main image */}
           <div className="aspect-square bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
-            <CategoryIcon className="h-32 w-32 text-primary-300" />
+            {normalizedImages[mainImageIndex] ? (
+              <div className="relative w-full h-full">
+                <Image
+                  src={normalizedImages[mainImageIndex]}
+                  alt={productName}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <CategoryIcon className="h-32 w-32 text-primary-300" />
+            )}
           </div>
           {/* Thumbnails */}
           <div className="grid grid-cols-4 gap-3">
@@ -236,7 +292,19 @@ export default function ProductDetail({
                     : 'opacity-60 hover:opacity-100'
                 )}
               >
-                <CategoryIcon className="h-8 w-8 text-primary-300" />
+                {normalizedImages[i] ? (
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={normalizedImages[i]}
+                      alt={`${productName} ${i + 1}`}
+                      fill
+                      sizes="120px"
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <CategoryIcon className="h-8 w-8 text-primary-300" />
+                )}
               </button>
             ))}
           </div>
@@ -392,7 +460,7 @@ export default function ProductDetail({
               {product.videoUrl ? (
                 <div className="aspect-video rounded-xl overflow-hidden bg-black">
                   <iframe
-                    src={product.videoUrl.replace('watch?v=', 'embed/')}
+                    src={getYouTubeEmbedUrl(product.videoUrl)}
                     className="w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -473,7 +541,7 @@ export default function ProductDetail({
                 <div className="relative group flex-shrink-0">
                   {er.expert.avatar ? (
                     <Image
-                      src={er.expert.avatar}
+                      src={getImageUrl(er.expert.avatar)}
                       alt={er.expert.name}
                       width={48}
                       height={48}
@@ -488,7 +556,7 @@ export default function ProductDetail({
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-4 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
                     <div className="flex items-center gap-3 mb-2">
                       {er.expert.avatar ? (
-                        <Image src={er.expert.avatar} alt={er.expert.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                        <Image src={getImageUrl(er.expert.avatar)} alt={er.expert.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className="w-10 h-10 bg-primary-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {er.expert.name.charAt(0).toUpperCase()}

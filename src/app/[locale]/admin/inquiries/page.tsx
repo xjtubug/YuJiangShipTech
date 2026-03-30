@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
+import { useParams, useRouter } from 'next/navigation';
 import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
   Download,
   RefreshCw,
+  FileText,
 } from 'lucide-react';
 
 interface InquiryItem {
@@ -51,6 +53,9 @@ const TAB_COLORS: Record<string, string> = {
 };
 
 export default function InquiriesPage() {
+  const router = useRouter();
+  const params = useParams();
+  const locale = (params.locale as string) || 'en';
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -286,6 +291,13 @@ export default function InquiriesPage() {
                             title="Download"
                           >
                             <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/${locale}/admin/quotations?fromInquiry=${inq.id}`)}
+                            className="p-1 rounded hover:bg-primary-50 text-gray-400 hover:text-primary-600"
+                            title="Create Quotation"
+                          >
+                            <FileText className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

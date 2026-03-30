@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useParams, useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import AuthProvider from '@/components/common/AuthProvider';
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +23,12 @@ import {
   PenTool,
   Bell,
   Check,
+  LogOut,
+  ShieldCheck,
+  ClipboardList,
+  ShoppingCart,
+  Mail,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -36,11 +45,16 @@ const navItems = [
   { href: '', label: 'Dashboard', labelZh: '仪表盘', icon: LayoutDashboard, badge: '' },
   { href: '/visitors', label: 'Visitors', labelZh: '访客管理', icon: Users, badge: 'visitors' },
   { href: '/inquiries', label: 'Inquiries', labelZh: '询价管理', icon: MessageSquare, badge: 'inquiries' },
+  { href: '/quotations', label: 'Quotations', labelZh: '报价管理', icon: ClipboardList, badge: '' },
+  { href: '/orders', label: 'Orders', labelZh: '订单管理', icon: ShoppingCart, badge: '' },
   { href: '/products', label: 'Products', labelZh: '产品管理', icon: Package, badge: '' },
+  { href: '/media', label: 'Media', labelZh: '媒体管理', icon: ImageIcon, badge: '' },
   { href: '/reports', label: 'Reports', labelZh: '数据报告', icon: FileText, badge: '' },
   { href: '/experts', label: 'Experts', labelZh: '专家管理', icon: UserCheck, badge: '' },
   { href: '/customers', label: 'Customers', labelZh: '客户管理', icon: UsersRound, badge: '' },
   { href: '/cms', label: 'CMS', labelZh: '内容管理', icon: PenTool, badge: '' },
+  { href: '/email', label: 'Email Marketing', labelZh: '邮件营销', icon: Mail, badge: '' },
+  { href: '/users', label: 'Users', labelZh: '用户管理', icon: ShieldCheck, badge: '' },
   { href: '/settings', label: 'Settings', labelZh: '系统设置', icon: Settings, badge: '' },
 ];
 
@@ -49,6 +63,19 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <AuthProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AuthProvider>
+  );
+}
+
+function AdminLayoutInner({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [badges, setBadges] = useState<Record<string, number>>({});
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -259,12 +286,23 @@ export default function AdminLayout({
               {locale === 'zh' ? 'EN' : '中文'}
             </button>
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-700">管理员</p>
-              <p className="text-xs text-gray-400">admin@yujiangshiptech.com</p>
+              <p className="text-sm font-medium text-gray-700">{session?.user?.name || '管理员'}</p>
+              <p className="text-xs text-gray-400">{session?.user?.email || ''}</p>
             </div>
             <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-              A
+              {session?.user?.avatar ? (
+                <Image src={session.user.avatar} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
+              ) : (
+                (session?.user?.name || 'A').charAt(0).toUpperCase()
+              )}
             </div>
+            <button
+              onClick={() => signOut({ callbackUrl: `/${locale}/admin/login` })}
+              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="退出登录"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </header>
 

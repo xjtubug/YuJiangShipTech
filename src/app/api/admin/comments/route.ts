@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  try {
+    await requireAuth(["admin"]);
+  } catch (error) {
+    if (error instanceof Response) return error;
+    throw error;
+  }
+
   const status = request.nextUrl.searchParams.get('status') || 'pending';
   const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
   const limit = 20;
@@ -26,6 +34,13 @@ export async function GET(request: NextRequest) {
 
 // Approve or reject comment
 export async function PATCH(request: NextRequest) {
+  try {
+    await requireAuth(["admin"]);
+  } catch (error) {
+    if (error instanceof Response) return error;
+    throw error;
+  }
+
   const { id, approved } = await request.json();
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 

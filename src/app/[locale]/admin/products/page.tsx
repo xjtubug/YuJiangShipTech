@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/image-utils';
 import toast from 'react-hot-toast';
 import {
   Package,
@@ -773,7 +774,7 @@ function ProductFormModal({
                   <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
                     {imageList.map((url, idx) => (
                       <div key={`${url}-${idx}`} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                        <Image src={url} alt={`产品图片 ${idx + 1}`} fill className="object-cover" sizes="100px" />
+                        <Image src={getImageUrl(url)} alt={`产品图片 ${idx + 1}`} fill className="object-cover" sizes="100px" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
                           <button
                             type="button"

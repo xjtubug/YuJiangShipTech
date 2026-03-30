@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Briefcase, Mail } from 'lucide-react';
@@ -44,10 +44,12 @@ const socialItems: SocialItem[] = [
 
 export default function SocialFloat() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Hide on admin pages
-  if (pathname.startsWith('/admin')) return null;
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || pathname.startsWith('/admin')) return null;
 
   return (
     <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[80] hidden md:flex flex-col gap-2">

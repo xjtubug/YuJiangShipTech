@@ -12,7 +12,9 @@ import CookieConsent from '@/components/common/CookieConsent';
 import SocialFloat from '@/components/common/SocialFloat';
 import TrackingScripts from '@/components/common/TrackingScripts';
 import VisitorTracker from '@/components/common/VisitorTracker';
+import { OrganizationSchema, WebSiteSchema } from '@/components/common/StructuredData';
 import { Toaster } from 'react-hot-toast';
+import prisma from '@/lib/prisma';
 import '../globals.css';
 
 const geistSans = localFont({
@@ -26,6 +28,9 @@ const geistMono = localFont({
   variable: '--font-geist-mono',
   weight: '100 900',
 });
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com';
 
 export const metadata: Metadata = {
   title: {
@@ -43,45 +48,47 @@ export const metadata: Metadata = {
     'deck machinery',
     'marine safety equipment',
   ],
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com'
-  ),
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+    languages: {
+      en: `${SITE_URL}/en`,
+      zh: `${SITE_URL}/zh`,
+      ja: `${SITE_URL}/ja`,
+      ar: `${SITE_URL}/ar`,
+      'x-default': `${SITE_URL}/en`,
+    },
+  },
   openGraph: {
     type: 'website',
     siteName: 'YuJiang ShipTechnology',
     locale: 'en_US',
+    images: [
+      {
+        url: `${SITE_URL}/og-default.png`,
+        width: 1200,
+        height: 630,
+        alt: 'YuJiang ShipTechnology – Marine Equipment',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'YuJiang ShipTechnology – Marine Equipment & Ship Supplies',
+    description:
+      'Leading B2B supplier of marine equipment, ship spare parts, and vessel supplies.',
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
-};
-
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'YuJiang ShipTechnology',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com',
-  logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yujiangshiptech.com'}/logo.png`,
-  description:
-    'Leading B2B supplier of marine equipment, ship spare parts, and vessel supplies.',
-  contactPoint: {
-    '@type': 'ContactPoint',
-    telephone: '+86-574-8600-0000',
-    contactType: 'sales',
-    email: 'sales@yujiangshiptech.com',
-    availableLanguage: ['English', 'Chinese', 'Japanese', 'Arabic'],
-  },
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'Ningbo',
-    addressRegion: 'Zhejiang',
-    addressCountry: 'CN',
-  },
-  sameAs: [
-    'https://www.linkedin.com/company/yujiang-shiptech',
-    'https://www.youtube.com/@yujiang-shiptech',
-  ],
 };
 
 export default async function LocaleLayout({
@@ -99,32 +106,31 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
   const isRtl = locale === 'ar';
+  const logoSetting = await prisma.siteSettings.findUnique({
+    where: { key: 'company_logo' },
+    select: { value: true },
+  });
+  const logoUrl = logoSetting?.value || null;
 
   return (
-    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'}>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationJsonLd),
-          }}
-        />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <NextIntlClientProvider messages={messages}>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-          <WhatsAppFloat />
-          <SocialFloat />
-          <CookieConsent />
-          <TrackingScripts />
-          <VisitorTracker />
-          <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <div
+      lang={locale}
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+    >
+      <NextIntlClientProvider messages={messages}>
+        <OrganizationSchema />
+        <WebSiteSchema locale={locale} />
+        <Header initialLogoUrl={logoUrl} />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
+        <WhatsAppFloat />
+        <SocialFloat />
+        <CookieConsent />
+        <TrackingScripts />
+        <VisitorTracker />
+        <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+      </NextIntlClientProvider>
+    </div>
   );
 }

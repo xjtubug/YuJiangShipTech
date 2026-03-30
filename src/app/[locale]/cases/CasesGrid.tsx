@@ -11,6 +11,7 @@ import {
   Globe,
 } from 'lucide-react';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/image-utils';
 
 interface CaseStudy {
   id: string;
@@ -125,7 +126,7 @@ export default function CasesGrid({ cases, locale }: Props) {
                 <div className="h-52 bg-gradient-to-br from-secondary-100 to-primary-100 flex items-center justify-center relative overflow-hidden">
                   {cs.image ? (
                     <Image
-                      src={cs.image}
+                      src={getImageUrl(cs.image)}
                       alt={title}
                       width={800}
                       height={350}
@@ -161,7 +162,7 @@ export default function CasesGrid({ cases, locale }: Props) {
                     <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                       {cs.clientLogo ? (
                         <Image
-                          src={cs.clientLogo}
+                          src={getImageUrl(cs.clientLogo)}
                           alt={cs.clientName}
                           width={24}
                           height={24}

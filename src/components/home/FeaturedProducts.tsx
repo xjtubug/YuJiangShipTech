@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
 import { Package, ShoppingCart, ArrowRight, Star } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore } from '@/lib/store';
 import { formatPrice, convertFromUsd } from '@/lib/utils';
+import { getImageUrl } from '@/lib/image-utils';
+import Image from 'next/image';
 
 interface Product {
   id: string;
@@ -47,6 +50,21 @@ export default function FeaturedProducts({ products }: { products: Product[] }) 
     });
   };
 
+  const getPrimaryImage = (images: string) => {
+    try {
+      const parsed = JSON.parse(images || '[]');
+      return Array.isArray(parsed) && parsed[0] ? getImageUrl(parsed[0]) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  const handleImageError = (productId: string) => {
+    setFailedImages((prev) => new Set(prev).add(productId));
+  };
+
   if (!products.length) return null;
 
   return (
@@ -84,10 +102,21 @@ export default function FeaturedProducts({ products }: { products: Product[] }) 
               transition={{ delay: i * 0.08 }}
               className="card flex-shrink-0 w-72 md:w-auto snap-start group"
             >
-              {/* Image placeholder - clickable */}
+              {/* Product image - clickable */}
               <Link href={`/products/${product.slug}`} className="block">
                 <div className="relative h-48 bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center overflow-hidden">
-                  <Package className="h-16 w-16 text-primary-300 group-hover:scale-110 transition-transform duration-300" />
+                  {getPrimaryImage(product.images) && !failedImages.has(product.id) ? (
+                    <Image
+                      src={getPrimaryImage(product.images)!}
+                      alt={getName(product)}
+                      fill
+                      sizes="(max-width: 768px) 18rem, (max-width: 1200px) 25vw, 20vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={() => handleImageError(product.id)}
+                    />
+                  ) : (
+                    <Package className="h-16 w-16 text-primary-300 group-hover:scale-110 transition-transform duration-300" />
+                  )}
                   {product.featured && (
                     <span className="absolute top-3 left-3 flex items-center gap-1 bg-accent-500 text-white text-xs font-bold px-2 py-1 rounded">
                       <Star className="h-3 w-3" />

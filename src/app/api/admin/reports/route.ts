@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(["admin"]);
+
     const body = await request.json();
     const { type, email } = body;
 
@@ -149,6 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, report: reportData });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Admin reports API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const { searchParams } = request.nextUrl;
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)));
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Admin inquiries API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -42,6 +46,8 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    await requireAuth(["sales"]);
+
     const body = await request.json();
     const { id, status } = body;
 
@@ -68,6 +74,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(inquiry);
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Admin inquiry update API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

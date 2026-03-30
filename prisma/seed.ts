@@ -6,6 +6,9 @@
 
 import 'dotenv/config'
 import { PrismaClient } from '../src/generated/prisma/client'
+import bcrypt from 'bcryptjs'
+import sharp from 'sharp'
+import { uploadBufferToMinio } from '../src/lib/minio'
 
 const prisma = new PrismaClient()
 
@@ -76,6 +79,39 @@ function specs(obj: Record<string, string | number>): string {
 
 function images(...paths: string[]): string {
   return JSON.stringify(paths)
+}
+
+async function ensureSeedImage(objectPath: string, title: string, accent: string): Promise<void> {
+  const safeTitle = title
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  const svg = `
+    <svg width="1600" height="1200" viewBox="0 0 1600 1200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#e0f2fe" />
+          <stop offset="100%" stop-color="${accent}" />
+        </linearGradient>
+      </defs>
+      <rect width="1600" height="1200" fill="url(#g)" />
+      <rect x="90" y="90" width="1420" height="1020" rx="40" fill="rgba(255,255,255,0.78)" />
+      <text x="130" y="270" font-size="64" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">YuJiang ShipTechnology</text>
+      <text x="130" y="380" font-size="84" font-family="Arial, sans-serif" font-weight="700" fill="#0f172a">${safeTitle}</text>
+      <text x="130" y="490" font-size="40" font-family="Arial, sans-serif" fill="#334155">Marine Equipment • B2B Export • MinIO Seed Asset</text>
+      <text x="130" y="1020" font-size="34" font-family="Arial, sans-serif" fill="#475569">www.yujiangshiptech.com</text>
+    </svg>
+  `
+
+  const pngBuffer = await sharp(Buffer.from(svg))
+    .png({ quality: 90 })
+    .toBuffer()
+
+  await uploadBufferToMinio(objectPath.replace(/^\/+/, ''), pngBuffer, {
+    'Content-Type': 'image/png',
+    'Cache-Control': 'public, max-age=31536000, immutable',
+  })
 }
 
 // ── Main ───────────────────────────────────────────────────────
@@ -542,6 +578,35 @@ async function main() {
   }
   console.log(`  ✓ Products (${products.length})`)
 
+  const seedImages = [
+    ['uploads/product-1.jpg', 'Bronze Gate Valve', '#0ea5e9'],
+    ['uploads/product-1-2.jpg', 'Bronze Gate Valve Detail', '#0284c7'],
+    ['uploads/product-2.jpg', 'Butterfly Valve', '#14b8a6'],
+    ['uploads/product-2-2.jpg', 'Butterfly Valve Actuator', '#0f766e'],
+    ['uploads/product-3.jpg', 'Sea Water Pump', '#38bdf8'],
+    ['uploads/product-3-2.jpg', 'Pump Cross Section', '#0369a1'],
+    ['uploads/product-4.jpg', 'Marine Gear Oil Pump', '#f59e0b'],
+    ['uploads/product-5.jpg', 'Electric Anchor Windlass', '#8b5cf6'],
+    ['uploads/product-5-2.jpg', 'Windlass Control Panel', '#6d28d9'],
+    ['uploads/product-6.jpg', 'Hydraulic Deck Crane', '#ef4444'],
+    ['uploads/product-6-2.jpg', 'Crane Boom Assembly', '#b91c1c'],
+    ['uploads/product-7.jpg', 'X-Band Radar System', '#10b981'],
+    ['uploads/product-7-2.jpg', 'Radar Display Console', '#047857'],
+    ['uploads/product-8.jpg', 'Marine GPS Receiver', '#3b82f6'],
+    ['uploads/product-9.jpg', 'Inflatable Life Raft', '#f97316'],
+    ['uploads/product-9-2.jpg', 'Life Raft Container', '#c2410c'],
+    ['uploads/product-10.jpg', 'Fire Extinguisher Set', '#dc2626'],
+    ['uploads/product-11.jpg', 'Cylinder Liner & Piston Kit', '#64748b'],
+    ['uploads/product-11-2.jpg', 'Piston Crown Detail', '#334155'],
+    ['uploads/product-12.jpg', 'Marine Turbocharger', '#0891b2'],
+    ['uploads/product-12-2.jpg', 'Turbocharger Assembly', '#155e75'],
+  ] as const
+
+  for (const [objectPath, title, accent] of seedImages) {
+    await ensureSeedImage(objectPath, title, accent)
+  }
+  console.log(`  ✓ Seed media (${seedImages.length})`)
+
   // ── 4. Reviews ──────────────────────────────────────────────
   await prisma.review.createMany({
     data: [
@@ -790,16 +855,17 @@ async function main() {
   console.log('  ✓ Certificates (5)')
 
   // ── 8. Admin User ───────────────────────────────────────────
+  const hashedPassword = await bcrypt.hash('admin123', 12)
   await prisma.adminUser.create({
     data: {
       id: ADMIN_ID,
       email: 'admin@yujiangshiptech.com',
-      password: 'admin123',
-      name: 'Admin',
-      role: 'admin',
+      password: hashedPassword,
+      name: 'System Admin',
+      role: 'super_admin',
     },
   })
-  console.log('  ✓ Admin User (1)')
+  console.log('  ✓ Admin User (1 — super_admin, hashed password)')
 
   // ── 9. Site Settings ────────────────────────────────────────
   const settings: { id: string; key: string; value: string }[] = [

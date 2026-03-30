@@ -7,6 +7,7 @@ import ProductGrid from '@/components/products/ProductGrid';
 import CompareDrawer from '@/components/products/CompareDrawer';
 import { Link } from '@/i18n/navigation';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+export const revalidate = 300;
 
 const PRODUCTS_PER_PAGE = 12;
 
