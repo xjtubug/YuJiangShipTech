@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -60,6 +61,7 @@ interface Quotation {
   deliveryTerms?: string | null;
   notes?: string | null;
   status: string;
+  attachments?: string | string[];
   approvedBy?: string | null;
   approvedAt?: string | null;
   sentAt?: string | null;
@@ -102,37 +104,29 @@ interface FormData {
   paymentTerms: string;
   deliveryTerms: string;
   notes: string;
+  attachments: string[];
   items: FormItem[];
 }
 
 // ─── Constants ───────────────────────────────────────────────
 
-const STATUSES = ['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'] as const;
+const STATUSES = ['all', 'draft', 'sent'] as const;
 
 const STATUS_LABELS: Record<string, string> = {
   all: '全部',
   draft: '草稿',
   sent: '已发送',
-  accepted: '已接受',
-  rejected: '已拒绝',
-  expired: '已过期',
 };
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700 ring-gray-500/20',
   sent: 'bg-indigo-100 text-indigo-800 ring-indigo-600/20',
-  accepted: 'bg-green-100 text-green-800 ring-green-600/20',
-  rejected: 'bg-red-100 text-red-800 ring-red-600/20',
-  expired: 'bg-orange-100 text-orange-800 ring-orange-600/20',
 };
 
 const TAB_COLORS: Record<string, string> = {
   all: 'bg-primary-600 text-white',
   draft: 'bg-gray-600 text-white',
   sent: 'bg-indigo-600 text-white',
-  accepted: 'bg-green-600 text-white',
-  rejected: 'bg-red-600 text-white',
-  expired: 'bg-orange-500 text-white',
 };
 
 const EMPTY_ITEM: FormItem = {
@@ -161,6 +155,7 @@ const INITIAL_FORM: FormData = {
   paymentTerms: 'T/T 30% deposit, 70% before shipment',
   deliveryTerms: 'FOB Zhoushan',
   notes: '',
+  attachments: [],
   items: [{ ...EMPTY_ITEM }],
 };
 
@@ -196,6 +191,33 @@ export default function QuotationsPage() {
 
   // Action state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+
+  // ─── Attachment upload handler ────────────────────────────
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    e.target.value = '';
+    setUploadingAttachment(true);
+    try {
+      const newAttachments = [...form.attachments];
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('category', 'quotation');
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        newAttachments.push(data.url);
+      }
+      updateField('attachments', newAttachments);
+      toast.success('附件上传成功');
+    } catch {
+      toast.error('附件上传失败');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
 
   // ─── Fetch quotations ────────────────────────────────────
   const fetchQuotations = useCallback(async () => {
@@ -275,7 +297,7 @@ export default function QuotationsPage() {
   }, [searchParams]);
 
   // ─── Form handlers ───────────────────────────────────────
-  const updateField = (field: keyof FormData, value: string | number) => {
+  const updateField = (field: keyof FormData, value: string | number | string[]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -341,6 +363,7 @@ export default function QuotationsPage() {
       paymentTerms: q.paymentTerms,
       deliveryTerms: q.deliveryTerms || '',
       notes: q.notes || '',
+      attachments: q.attachments ? (typeof q.attachments === 'string' ? JSON.parse(q.attachments) : q.attachments) : [],
       items: q.items.map((it) => ({
         productId: it.productId || '',
         productName: it.productName,
@@ -858,6 +881,44 @@ export default function QuotationsPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
                       placeholder="Additional notes..."
                     />
+                  </div>
+                  {/* Attachments */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">附件（图片/视频/文件）</label>
+                    {form.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {form.attachments.map((url, i) => {
+                          const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+                          const isVideo = /\.(mp4|webm)$/i.test(url);
+                          return (
+                            <div key={i} className="relative group">
+                              {isImage ? (
+                                <Image src={url} alt="" width={64} height={64} className="w-16 h-16 object-cover rounded border" />
+                              ) : isVideo ? (
+                                <div className="w-16 h-16 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-500">🎥 视频</div>
+                              ) : (
+                                <div className="w-16 h-16 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-500">📄 文件</div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = form.attachments.filter((_, idx) => idx !== i);
+                                  updateField('attachments', next);
+                                }}
+                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <label className="inline-flex items-center gap-2 px-3 py-2 text-xs border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 text-gray-500 hover:text-primary-600 transition-colors">
+                      {uploadingAttachment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {uploadingAttachment ? '上传中...' : '添加附件'}
+                      <input type="file" className="hidden" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onChange={handleAttachmentUpload} disabled={uploadingAttachment} />
+                    </label>
                   </div>
                 </div>
 

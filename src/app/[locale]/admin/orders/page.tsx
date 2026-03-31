@@ -129,7 +129,7 @@ interface FormData {
 // ─── Constants ───────────────────────────────────────────────
 
 const STATUSES = [
-  'all', 'confirmed', 'in_production', 'quality_check', 'ready_to_ship',
+  'all', 'confirmed', 'in_production', 'ready_to_ship',
   'shipped', 'in_transit', 'delivered', 'completed', 'cancelled',
 ] as const;
 
@@ -137,7 +137,6 @@ const STATUS_LABELS: Record<string, string> = {
   all: '全部',
   confirmed: '已确认',
   in_production: '生产中',
-  quality_check: '质检中',
   ready_to_ship: '待发货',
   shipped: '已发货',
   in_transit: '运输中',
@@ -149,7 +148,6 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   confirmed: 'bg-blue-100 text-blue-800 ring-blue-600/20',
   in_production: 'bg-yellow-100 text-yellow-800 ring-yellow-600/20',
-  quality_check: 'bg-orange-100 text-orange-800 ring-orange-600/20',
   ready_to_ship: 'bg-cyan-100 text-cyan-800 ring-cyan-600/20',
   shipped: 'bg-purple-100 text-purple-800 ring-purple-600/20',
   in_transit: 'bg-indigo-100 text-indigo-800 ring-indigo-600/20',
@@ -162,7 +160,6 @@ const TAB_COLORS: Record<string, string> = {
   all: 'bg-primary-600 text-white',
   confirmed: 'bg-blue-600 text-white',
   in_production: 'bg-yellow-500 text-white',
-  quality_check: 'bg-orange-500 text-white',
   ready_to_ship: 'bg-cyan-600 text-white',
   shipped: 'bg-purple-600 text-white',
   in_transit: 'bg-indigo-600 text-white',
@@ -180,8 +177,7 @@ const SHIPPING_METHODS: Record<string, string> = {
 
 const NEXT_STATUS: Record<string, string> = {
   confirmed: 'in_production',
-  in_production: 'quality_check',
-  quality_check: 'ready_to_ship',
+  in_production: 'ready_to_ship',
   ready_to_ship: 'shipped',
   shipped: 'in_transit',
   in_transit: 'delivered',

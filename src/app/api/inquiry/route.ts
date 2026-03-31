@@ -122,21 +122,17 @@ export async function POST(request: NextRequest) {
       console.error('Failed to create notification:', e);
     }
 
-    // Try to send email notifications (don't fail the request on error)
-    try {
-      await sendInquiryNotification({
-        customerEmail: email,
-        customerName: contactName,
-        inquiryNumber,
-        items: inquiry.items.map((item) => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-        })),
-      });
-    } catch (emailError) {
-      console.error('Failed to send inquiry notification email:', emailError);
-    }
+    // Try to send email notifications (non-blocking – don't await)
+    sendInquiryNotification({
+      customerEmail: email,
+      customerName: contactName,
+      inquiryNumber,
+      items: inquiry.items.map((item) => ({
+        productName: item.productName,
+        quantity: item.quantity,
+        unit: item.unit,
+      })),
+    }).catch((err) => console.error('Failed to send inquiry notification email:', err));
 
     return NextResponse.json({ success: true, inquiryNumber });
   } catch (error) {

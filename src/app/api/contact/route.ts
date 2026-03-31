@@ -26,12 +26,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Try to send email notification (don't fail the request on error)
-    try {
-      await sendContactNotification({ name, email, company, message });
-    } catch (emailError) {
-      console.error('Failed to send contact notification email:', emailError);
-    }
+    // Send email notification non-blocking (don't await – prevents hanging)
+    sendContactNotification({ name, email, company, message })
+      .catch((err) => console.error('Failed to send contact notification email:', err));
+
+    // Create admin notification
+    prisma.notification.create({
+      data: {
+        type: 'new_contact',
+        title: `新留言 - ${name}`,
+        message: `${name}${company ? ` (${company})` : ''} 通过联系我们发送了消息`,
+        link: '/admin/inquiries?tab=contact',
+      },
+    }).catch((err) => console.error('Failed to create contact notification:', err));
 
     return NextResponse.json({ success: true });
   } catch (error) {

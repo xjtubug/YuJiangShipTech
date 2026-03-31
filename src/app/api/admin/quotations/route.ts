@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
       paymentTerms,
       deliveryTerms,
       notes,
+      attachments,
       items,
     } = body;
 
@@ -170,6 +171,7 @@ export async function POST(request: NextRequest) {
         paymentTerms: paymentTerms || "T/T 30% deposit, 70% before shipment",
         deliveryTerms: deliveryTerms || null,
         notes: notes || null,
+        attachments: attachments ? JSON.stringify(attachments) : "[]",
         status: "draft",
         createdBy: session.user.name || session.user.email,
         items: {

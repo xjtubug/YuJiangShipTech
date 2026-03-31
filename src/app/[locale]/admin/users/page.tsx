@@ -8,11 +8,7 @@ import {
   Plus,
   Edit2,
   Ban,
-  Shield,
   ShieldCheck,
-  ShieldAlert,
-  Eye,
-  Truck,
   Award,
   X,
   Loader2,
@@ -33,11 +29,7 @@ interface AdminUser {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; desc: string }> = {
-  super_admin: { label: '超级管理员', color: 'bg-red-100 text-red-700', icon: ShieldAlert, desc: '全部权限，可管理其他管理员' },
-  admin: { label: '管理员', color: 'bg-orange-100 text-orange-700', icon: ShieldCheck, desc: '产品/内容/询价管理' },
-  sales: { label: '销售', color: 'bg-blue-100 text-blue-700', icon: Shield, desc: '询价/报价/订单管理' },
-  logistics: { label: '物流', color: 'bg-green-100 text-green-700', icon: Truck, desc: '订单/物流管理' },
-  viewer: { label: '只读', color: 'bg-gray-100 text-gray-700', icon: Eye, desc: '只读访问' },
+  admin: { label: '管理员', color: 'bg-orange-100 text-orange-700', icon: ShieldCheck, desc: '全部管理权限' },
   expert: { label: '专家', color: 'bg-purple-100 text-purple-700', icon: Award, desc: '专家评审' },
 };
 
@@ -59,9 +51,32 @@ export default function UsersPage() {
     name: '',
     role: 'admin',
     title: '',
+    bio: '',
+    avatar: '',
   });
 
-  const isSuperAdmin = session?.user?.role === 'super_admin';
+  const isSuperAdmin = session?.user?.role === 'super_admin' || session?.user?.role === 'admin';
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'form' | 'edit') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('category', 'avatar');
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      if (target === 'form') {
+        setForm((prev) => ({ ...prev, avatar: data.url }));
+      } else if (editUser) {
+        handleUpdate(editUser.id, { avatar: data.url });
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -100,7 +115,7 @@ export default function UsersPage() {
       }
 
       setShowModal(false);
-      setForm({ email: '', password: '', name: '', role: 'admin', title: '' });
+      setForm({ email: '', password: '', name: '', role: 'admin', title: '', bio: '', avatar: '' });
       fetchUsers();
     } catch {
       setError('Failed to create user');
@@ -384,6 +399,32 @@ export default function UsersPage() {
                   placeholder="可选"
                 />
               </div>
+              {form.role === 'expert' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">头像</label>
+                    <div className="flex items-center gap-3">
+                      {form.avatar && (
+                        <Image src={form.avatar} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                      )}
+                      <label className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs cursor-pointer hover:bg-gray-50">
+                        上传头像
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleAvatarUpload(e, 'form')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">简介</label>
+                    <textarea
+                      value={form.bio}
+                      onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                      placeholder="专家简介..."
+                    />
+                  </div>
+                </>
+              )}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"

@@ -29,6 +29,7 @@ import {
   Film,
   Sparkles,
   FileSpreadsheet,
+  FolderTree,
 } from 'lucide-react';
 import FileUploadField from '@/components/common/FileUploadField';
 
@@ -40,6 +41,12 @@ interface Category {
   id: string;
   slug: string;
   nameEn: string;
+  nameZh: string;
+  nameJa?: string;
+  nameAr?: string;
+  image?: string | null;
+  parentId?: string | null;
+  _count?: { products: number };
   children?: Category[];
 }
 
@@ -211,6 +218,204 @@ function flattenCategories(cats: Category[]): Category[] {
   };
   walk(cats, 0);
   return flat;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Category Management Modal                                         */
+/* ------------------------------------------------------------------ */
+
+function CategoryManagerModal({
+  onClose,
+  onUpdate,
+}: {
+  onClose: () => void;
+  onUpdate: () => void;
+}) {
+  const [cats, setCats] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editCat, setEditCat] = useState<Category | null>(null);
+  const [form, setForm] = useState({ nameEn: '', nameZh: '', nameJa: '', nameAr: '', parentId: '' });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fetchCats = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/categories');
+      const data = await res.json();
+      setCats(data.categories ?? []);
+    } catch { /* empty */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchCats(); }, []);
+
+  const openCreate = () => {
+    setEditCat(null);
+    setForm({ nameEn: '', nameZh: '', nameJa: '', nameAr: '', parentId: '' });
+  };
+
+  const openEdit = (c: Category) => {
+    setEditCat(c);
+    setForm({
+      nameEn: c.nameEn,
+      nameZh: c.nameZh || '',
+      nameJa: c.nameJa || '',
+      nameAr: c.nameAr || '',
+      parentId: c.parentId || '',
+    });
+  };
+
+  const handleSave = async () => {
+    if (!form.nameEn.trim()) return toast.error('英文名称必填');
+    setSaving(true);
+    try {
+      const method = editCat ? 'PUT' : 'POST';
+      const body = editCat ? { id: editCat.id, ...form } : form;
+      const res = await fetch('/api/admin/categories', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || '保存失败');
+      }
+      toast.success(editCat ? '分类已更新' : '分类已创建');
+      setEditCat(null);
+      setForm({ nameEn: '', nameZh: '', nameJa: '', nameAr: '', parentId: '' });
+      fetchCats();
+      onUpdate();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || '删除失败');
+      }
+      toast.success('分类已删除');
+      fetchCats();
+      onUpdate();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '删除失败');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const allFlat = flattenCategories(cats);
+  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <FolderTree className="w-5 h-5 text-primary-600" /> 分类管理
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Form */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-700">
+              {editCat ? `编辑分类: ${editCat.nameEn}` : '新建分类'}
+              {editCat && (
+                <button onClick={openCreate} className="ml-3 text-xs text-primary-600 hover:underline">+ 新建</button>
+              )}
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">英文名称 *</label>
+                <input className={inputCls} value={form.nameEn} onChange={e => setForm(p => ({ ...p, nameEn: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">中文名称</label>
+                <input className={inputCls} value={form.nameZh} onChange={e => setForm(p => ({ ...p, nameZh: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">日文名称</label>
+                <input className={inputCls} value={form.nameJa} onChange={e => setForm(p => ({ ...p, nameJa: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">阿拉伯文名称</label>
+                <input className={inputCls} value={form.nameAr} onChange={e => setForm(p => ({ ...p, nameAr: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">父级分类</label>
+              <select className={inputCls} value={form.parentId} onChange={e => setForm(p => ({ ...p, parentId: e.target.value }))}>
+                <option value="">无（顶级分类）</option>
+                {allFlat.filter(c => c.id !== editCat?.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.nameEn}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editCat ? '保存修改' : '创建分类'}
+              </button>
+            </div>
+          </div>
+
+          {/* List */}
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : cats.length === 0 ? (
+            <p className="text-center text-gray-400 text-sm py-8">暂无分类</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b">
+                  <th className="pb-2">名称 (EN)</th>
+                  <th className="pb-2">名称 (ZH)</th>
+                  <th className="pb-2 text-center">产品数</th>
+                  <th className="pb-2 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {allFlat.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="py-2 font-medium text-gray-800">{c.nameEn}</td>
+                    <td className="py-2 text-gray-600">{c.nameZh}</td>
+                    <td className="py-2 text-center text-gray-500">{c._count?.products ?? 0}</td>
+                    <td className="py-2 text-right space-x-2">
+                      <button onClick={() => openEdit(c)} className="text-primary-600 hover:text-primary-800" title="编辑">
+                        <Pencil className="w-4 h-4 inline" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        disabled={deletingId === c.id}
+                        className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                        title="删除"
+                      >
+                        {deletingId === c.id ? <Loader2 className="w-4 h-4 inline animate-spin" /> : <Trash2 className="w-4 h-4 inline" />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -864,11 +1069,26 @@ function ProductFormModal({
                 className={`${inputCls} font-mono text-xs`}
                 value={form.specsJson}
                 onChange={(e) => set('specsJson', e.target.value)}
-                placeholder='{"功率": "200HP", "重量": "500kg"}'
+                placeholder='{"功率": "200HP", "重量": "500kg", "尺寸": "1200×800×600mm"}'
               />
               <p className="mt-1 text-xs text-gray-400">
                 输入JSON格式的产品技术参数，每个键值对将显示在参数表中。
               </p>
+              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
+                <p className="font-medium text-gray-600 mb-1">💡 填写示例：</p>
+                <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed">{`{
+  "型号": "YJ-ME200",
+  "功率": "200HP / 149kW",
+  "转速": "1800-3600 RPM",
+  "重量": "500kg",
+  "尺寸 (长×宽×高)": "1200×800×600mm",
+  "燃油类型": "柴油",
+  "冷却方式": "水冷",
+  "排放标准": "IMO Tier II",
+  "适用船型": "渔船 / 货船 / 游艇",
+  "质保期": "18个月"
+}`}</pre>
+              </div>
             </div>
           )}
         </div>
@@ -1143,18 +1363,21 @@ export default function ProductsPage() {
   const [formProduct, setFormProduct] = useState<Product | null | undefined>(undefined); // undefined=closed, null=create, Product=edit
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [showBatch, setShowBatch] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Inline action loading
   const [actionId, setActionId] = useState<string | null>(null);
 
-  /* Fetch categories once */
-  useEffect(() => {
+  /* Fetch categories */
+  const fetchCategories = useCallback(() => {
     fetch('/api/admin/categories')
       .then((r) => r.json())
       .then((d) => setCategories(flattenCategories(d.categories ?? [])))
       .catch(() => {});
   }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   /* Fetch products */
   const fetchProducts = useCallback(async () => {
@@ -1282,6 +1505,13 @@ export default function ProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">产品管理</h1>
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          <button
+            onClick={() => setShowCategoryManager(true)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          >
+            <FolderTree className="w-4 h-4" />
+            <span className="hidden sm:inline">分类管理</span>
+          </button>
           <button
             onClick={() => setShowBatch(true)}
             className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -1605,6 +1835,13 @@ export default function ProductsPage() {
             setShowBatch(false);
             fetchProducts();
           }}
+        />
+      )}
+
+      {showCategoryManager && (
+        <CategoryManagerModal
+          onClose={() => setShowCategoryManager(false)}
+          onUpdate={fetchCategories}
         />
       )}
     </div>

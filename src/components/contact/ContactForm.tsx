@@ -106,12 +106,17 @@ export default function ContactForm() {
     if (!validate()) return;
 
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, attachmentUrl: attachmentUrl || undefined }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) throw new Error('Failed');
 
@@ -119,8 +124,13 @@ export default function ContactForm() {
       setFormData({ name: '', email: '', company: '', phone: '', subject: '', message: '' });
       setAttachmentUrl('');
       setAttachmentName('');
-    } catch {
-      toast.error(t('formError'));
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.error(t('formError'));
+      } else {
+        toast.error(t('formError'));
+      }
     } finally {
       setLoading(false);
     }

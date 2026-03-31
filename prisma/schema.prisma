@@ -223,10 +223,16 @@ model CaseStudy {
   clientLogo  String?
   country     String
   image       String?
+  images      String   @default("[]") @db.VarChar(5000)
+  videoUrl    String?
+  latitude    Float?
+  longitude   Float?
+  locationName String?
   contentEn   String @db.Text
   contentZh   String @db.Text
   rating      Int      @default(5)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 model Certificate {
@@ -267,6 +273,7 @@ model Quotation {
   approvedAt      DateTime?
   sentAt          DateTime?
   pdfUrl          String?
+  attachments     String   @default("[]") @db.VarChar(5000)
   items           QuotationItem[]
   orders          Order[]
   createdBy       String   @default("admin")
@@ -320,7 +327,7 @@ model Order {
   trackingUrl     String?
   shippingAddress String?  @db.Text
   notes           String?  @db.Text
-  status          String   @default("confirmed") // confirmed, in_production, quality_check, ready_to_ship, shipped, in_transit, delivered, completed, cancelled
+  status          String   @default("confirmed") // confirmed, in_production, ready_to_ship, shipped, in_transit, delivered, completed, cancelled
   items           OrderItem[]
   statusHistory   OrderStatusHistory[]
   createdBy       String   @default("admin")
@@ -420,13 +427,41 @@ model MediaFile {
   @@index([createdAt])
 }
 
+// ─── About Us Content (关于我们) ─────────────────────────────
+model AboutContent {
+  id          String   @id @default(uuid())
+  section     String   @unique // intro, factory, team, location, pdf
+  titleEn     String   @default("")
+  titleZh     String   @default("")
+  contentEn   String   @default("") @db.Text
+  contentZh   String   @default("") @db.Text
+  images      String   @default("[]") @db.VarChar(5000)
+  videoUrl    String?
+  pdfUrl      String?
+  extraJson   String   @default("{}") @db.Text
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamMember {
+  id          String   @id @default(uuid())
+  nameEn      String
+  nameZh      String
+  titleEn     String   @default("")
+  titleZh     String   @default("")
+  avatar      String?
+  bio         String?  @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
 // ─── Admin & Reports ────────────────────────────────────────
 model AdminUser {
   id          String   @id @default(uuid())
   email       String   @unique
   password    String
   name        String
-  role        String   @default("admin") // super_admin, admin, sales, logistics, viewer, expert
+  role        String   @default("admin") // admin, expert
   avatar      String?
   bio         String?
   title       String?

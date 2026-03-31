@@ -56,10 +56,10 @@ export async function PUT(
       return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
     }
 
-    // Only draft or rejected quotations can be fully edited
-    if (!["draft", "pending_approval"].includes(existing.status)) {
+    // Only draft quotations can be fully edited
+    if (existing.status !== "draft") {
       return NextResponse.json(
-        { error: "Only draft or pending quotations can be edited" },
+        { error: "Only draft quotations can be edited" },
         { status: 400 }
       );
     }
@@ -79,6 +79,7 @@ export async function PUT(
       paymentTerms,
       deliveryTerms,
       notes,
+      attachments,
       items,
     } = body;
 
@@ -94,6 +95,7 @@ export async function PUT(
     if (paymentTerms !== undefined) updateData.paymentTerms = paymentTerms;
     if (deliveryTerms !== undefined) updateData.deliveryTerms = deliveryTerms || null;
     if (notes !== undefined) updateData.notes = notes || null;
+    if (attachments !== undefined) updateData.attachments = JSON.stringify(attachments);
 
     // If items are provided, recalculate totals
     if (items && Array.isArray(items)) {
@@ -130,11 +132,6 @@ export async function PUT(
       if (discount !== undefined) updateData.discount = Number(discount) || 0;
       if (tax !== undefined) updateData.tax = Number(tax) || 0;
       if (shippingCost !== undefined) updateData.shippingCost = Number(shippingCost) || 0;
-    }
-
-    // If editing a pending_approval quotation, reset to draft
-    if (existing.status === "pending_approval" && items) {
-      updateData.status = "draft";
     }
 
     const quotation = await prisma.quotation.update({

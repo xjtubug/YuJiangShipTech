@@ -18,7 +18,6 @@ import {
   Menu,
   X,
   Ship,
-  UserCheck,
   UsersRound,
   Globe,
   PenTool,
@@ -29,6 +28,7 @@ import {
   ClipboardList,
   ShoppingCart,
   Mail,
+  Star,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -47,9 +47,10 @@ const navItems = [
   { href: '/orders', label: 'Orders', labelZh: '订单管理', icon: ShoppingCart, badge: '' },
   { href: '/products', label: 'Products', labelZh: '产品管理', icon: Package, badge: '' },
   { href: '/reports', label: 'Reports', labelZh: '数据报告', icon: FileText, badge: '' },
-  { href: '/experts', label: 'Experts', labelZh: '专家管理', icon: UserCheck, badge: '' },
   { href: '/customers', label: 'Customers', labelZh: '客户管理', icon: UsersRound, badge: '' },
+  { href: '/comments', label: 'Reviews', labelZh: '客户评价', icon: Star, badge: 'comments' },
   { href: '/cms', label: 'CMS', labelZh: '内容管理', icon: PenTool, badge: '' },
+  { href: '/about-manage', label: 'About Us', labelZh: '关于我们', icon: Globe, badge: '' },
   { href: '/email', label: 'Email Marketing', labelZh: '邮件营销', icon: Mail, badge: '' },
   { href: '/users', label: 'Users', labelZh: '用户管理', icon: ShieldCheck, badge: '' },
   { href: '/settings', label: 'Settings', labelZh: '系统设置', icon: Settings, badge: '' },
@@ -264,7 +265,18 @@ function AdminLayoutInner({
                         <Link
                           key={n.id}
                           href={n.link ? `/${locale}/admin${n.link.replace('/admin', '')}` : '#'}
-                          onClick={() => setNotifOpen(false)}
+                          onClick={() => {
+                            setNotifOpen(false);
+                            if (!n.read) {
+                              fetch('/api/admin/notifications', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: n.id }),
+                              }).catch(() => {});
+                              setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+                              fetchNotifications();
+                            }
+                          }}
                           className={`block px-4 py-3 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-blue-50/50' : ''}`}
                         >
                           <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.title}</p>

@@ -2,7 +2,17 @@ import { getTranslations } from "next-intl/server";
 import dynamic from "next/dynamic";
 import prisma from "@/lib/prisma";
 import HeroSection from "@/components/home/HeroSection";
-import FeaturedProducts from "@/components/home/FeaturedProducts";
+
+const FeaturedProducts = dynamic(
+	() => import("@/components/home/FeaturedProducts"),
+	{
+		loading: () => (
+			<div className="section-padding bg-white">
+				<div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" />
+			</div>
+		),
+	},
+);
 
 const AdvantagesSection = dynamic(
 	() => import("@/components/home/AdvantagesSection"),

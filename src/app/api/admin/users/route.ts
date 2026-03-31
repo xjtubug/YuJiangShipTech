@@ -15,9 +15,11 @@ export async function GET() {
         role: true,
         avatar: true,
         title: true,
+        bio: true,
         active: true,
         lastLoginAt: true,
         createdAt: true,
+        _count: { select: { expertReviews: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -32,10 +34,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth(['super_admin']);
+    await requireAuth(['admin']);
 
     const body = await request.json();
-    const { email, password, name, role, title } = body;
+    const { email, password, name, role, title, bio, avatar } = body;
 
     if (!email || !password || !name || !role) {
       return NextResponse.json(
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validRoles = ['super_admin', 'admin', 'sales', 'logistics', 'viewer', 'expert'];
+    const validRoles = ['admin', 'expert'];
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
@@ -65,6 +67,8 @@ export async function POST(request: NextRequest) {
         name,
         role,
         title: title || null,
+        bio: bio || null,
+        avatar: avatar || null,
       },
       select: {
         id: true,

@@ -246,7 +246,7 @@ export default function QuoteForm({ products, categories }: QuoteFormProps) {
 
     setLoading(true);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
       const payload = {
