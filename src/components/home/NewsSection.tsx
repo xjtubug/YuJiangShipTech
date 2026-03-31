@@ -17,6 +17,12 @@ interface NewsArticle {
 export default function NewsSection({ news }: { news: NewsArticle[] }) {
   const t = useTranslations('news');
   const tc = useTranslations('common');
+  const dateFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
 
   if (!news.length) return null;
 
@@ -47,10 +53,7 @@ export default function NewsSection({ news }: { news: NewsArticle[] }) {
         {/* Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {news.map((article, i) => {
-            const date = new Date(article.createdAt).toLocaleDateString(
-              'en-US',
-              { year: 'numeric', month: 'short', day: 'numeric' }
-            );
+            const date = dateFormatter.format(new Date(article.createdAt));
 
             return (
               <motion.div

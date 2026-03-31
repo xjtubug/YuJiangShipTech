@@ -198,6 +198,11 @@ export default async function ProductsPage({
             <ProductFilters
               categories={serializedCategories}
               locale={locale}
+              initialCategory={categorySlug}
+              initialSearch={searchQuery}
+              initialSort={sortBy}
+              initialMinPrice={sp.minPrice}
+              initialMaxPrice={sp.maxPrice}
             />
           </aside>
 

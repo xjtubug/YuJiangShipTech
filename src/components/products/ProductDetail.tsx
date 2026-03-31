@@ -215,10 +215,10 @@ export default function ProductDetail({
   const normalizedImages = imagesList.map((image) => getImageUrl(image)).filter(Boolean);
   const placeholderCount = Math.max(3, normalizedImages.length || 3);
 
-  const [siteUrl, setSiteUrl] = useState('');
+  const [siteUrl, setSiteUrl] = useState<string>('');
 
   useEffect(() => {
-    setSiteUrl(window.location.href);
+    setSiteUrl(typeof window !== 'undefined' ? window.location.href : '');
   }, []);
 
   const handleAddToInquiry = () => {
@@ -276,7 +276,9 @@ export default function ProductDetail({
                 />
               </div>
             ) : (
-              <CategoryIcon className="h-32 w-32 text-primary-300" />
+              <div suppressHydrationWarning>
+                <CategoryIcon className="h-32 w-32 text-primary-300" />
+              </div>
             )}
           </div>
           {/* Thumbnails */}
@@ -303,7 +305,9 @@ export default function ProductDetail({
                     />
                   </div>
                 ) : (
-                  <CategoryIcon className="h-8 w-8 text-primary-300" />
+                  <div suppressHydrationWarning>
+                    <CategoryIcon className="h-8 w-8 text-primary-300" />
+                  </div>
                 )}
               </button>
             ))}

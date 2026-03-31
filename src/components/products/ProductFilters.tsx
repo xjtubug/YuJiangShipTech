@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,6 +26,12 @@ interface Category {
 interface ProductFiltersProps {
   categories: Category[];
   locale: string;
+  /** From server `searchParams` — avoids `useSearchParams()` hydration / CSR bailout issues */
+  initialCategory?: string;
+  initialSearch?: string;
+  initialSort?: string;
+  initialMinPrice?: string;
+  initialMaxPrice?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,42 +40,99 @@ function getLocalizedField(obj: any, field: string, locale: string): string {
   return obj[key] || obj[`${field}En`] || '';
 }
 
-export default function ProductFilters({ categories, locale }: ProductFiltersProps) {
+function buildQueryString(
+  base: {
+    category?: string;
+    search?: string;
+    sort?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  },
+  patch: Record<string, string | null>
+) {
+  const next: Record<string, string> = {};
+  if (base.category) next.category = base.category;
+  if (base.search) next.search = base.search;
+  if (base.sort && base.sort !== 'newest') next.sort = base.sort;
+  if (base.minPrice) next.minPrice = base.minPrice;
+  if (base.maxPrice) next.maxPrice = base.maxPrice;
+
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === null || v === '') {
+      delete next[k];
+    } else {
+      next[k] = v;
+    }
+  }
+
+  const params = new URLSearchParams();
+  if (next.category) params.set('category', next.category);
+  if (next.search) params.set('search', next.search);
+  if (next.sort && next.sort !== 'newest') params.set('sort', next.sort);
+  if (next.minPrice) params.set('minPrice', next.minPrice);
+  if (next.maxPrice) params.set('maxPrice', next.maxPrice);
+  params.delete('page');
+  return params.toString();
+}
+
+export default function ProductFilters({
+  categories,
+  locale,
+  initialCategory = '',
+  initialSearch = '',
+  initialSort = 'newest',
+  initialMinPrice = '',
+  initialMaxPrice = '',
+}: ProductFiltersProps) {
   const t = useTranslations('products');
   const currentLocale = useLocale();
   const effectiveLocale = locale || currentLocale;
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
+  const [minPrice, setMinPrice] = useState(initialMinPrice || '');
+  const [maxPrice, setMaxPrice] = useState(initialMaxPrice || '');
 
-  const activeCategory = searchParams.get('category') || '';
-  const activeSort = searchParams.get('sort') || 'newest';
-  const activeSearch = searchParams.get('search') || '';
+  useEffect(() => {
+    setMinPrice(initialMinPrice || '');
+    setMaxPrice(initialMaxPrice || '');
+  }, [initialMinPrice, initialMaxPrice]);
 
-  const hasActiveFilters = activeCategory || activeSearch || minPrice || maxPrice || activeSort !== 'newest';
+  const activeCategory = initialCategory;
+  const activeSort = initialSort || 'newest';
+  const activeSearch = initialSearch;
+
+  const hasActiveFilters =
+    !!activeCategory ||
+    !!activeSearch ||
+    activeSort !== 'newest' ||
+    !!(initialMinPrice || initialMaxPrice) ||
+    !!(minPrice || maxPrice);
 
   const updateParams = useCallback(
-    (updates: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      // Reset page when filters change
-      params.delete('page');
-
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === null || value === '') {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
-      });
-
-      const qs = params.toString();
+    (patch: Record<string, string | null>) => {
+      const qs = buildQueryString(
+        {
+          category: initialCategory,
+          search: initialSearch,
+          sort: initialSort,
+          minPrice: initialMinPrice,
+          maxPrice: initialMaxPrice,
+        },
+        patch
+      );
       router.push(`${pathname}${qs ? `?${qs}` : ''}`);
     },
-    [searchParams, router, pathname]
+    [
+      initialCategory,
+      initialSearch,
+      initialSort,
+      initialMinPrice,
+      initialMaxPrice,
+      router,
+      pathname,
+    ]
   );
 
   const handleCategoryClick = (slug: string) => {
@@ -241,6 +303,7 @@ export default function ProductFilters({ categories, locale }: ProductFiltersPro
     <>
       {/* Mobile toggle */}
       <button
+        type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
         className="lg:hidden w-full flex items-center justify-between px-4 py-3 mb-4 bg-white border border-primary-200 rounded-xl text-sm font-medium text-primary-700"
       >

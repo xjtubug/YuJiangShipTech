@@ -14,8 +14,9 @@ export default function WhatsAppFloat() {
 
   useEffect(() => setMounted(true), []);
 
-  // Hide on admin pages
-  if (!mounted || pathname.startsWith('/admin')) return null;
+  // Hide on admin pages (with or without locale prefix).
+  const isAdminRoute = pathname === '/admin' || pathname.includes('/admin');
+  if (!mounted || isAdminRoute) return null;
 
   const message = encodeURIComponent(
     'Hello! I am interested in your marine equipment products. Could you provide more information?',

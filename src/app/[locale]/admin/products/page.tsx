@@ -30,6 +30,7 @@ import {
   Sparkles,
   FileSpreadsheet,
 } from 'lucide-react';
+import FileUploadField from '@/components/common/FileUploadField';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -846,7 +847,10 @@ function ProductFormModal({
               {/* --- PDF --- */}
               <div>
                 <label className={labelCls}>PDF 文档</label>
-                <input className={inputCls} value={form.pdfUrl} onChange={(e) => set('pdfUrl', e.target.value)} placeholder="https://example.com/spec.pdf" />
+                {/* File upload field with upload button */}
+                <div>
+                  <FileUploadField label="产品规格/手册 (PDF)" value={form.pdfUrl} onChange={(url) => set('pdfUrl', url)} accept=".pdf" />
+                </div>
               </div>
             </>
           )}
