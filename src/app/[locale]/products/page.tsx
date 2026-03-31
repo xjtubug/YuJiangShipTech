@@ -1,12 +1,14 @@
 import { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { getTranslations } from 'next-intl/server';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import ProductFilters from '@/components/products/ProductFilters';
 import ProductGrid from '@/components/products/ProductGrid';
-import CompareDrawer from '@/components/products/CompareDrawer';
 import { Link } from '@/i18n/navigation';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+
+const CompareDrawer = dynamic(() => import('@/components/products/CompareDrawer'), { ssr: false });
 export const revalidate = 300;
 
 const PRODUCTS_PER_PAGE = 12;

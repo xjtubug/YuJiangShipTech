@@ -113,7 +113,7 @@ export default function Header({
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
               {logoUrl ? (
-                <Image src={getImageUrl(logoUrl)} alt="YuJiang ShipTech" width={150} height={48} className="h-9 md:h-12 w-auto object-contain" />
+                <Image src={getImageUrl(logoUrl)} alt="YuJiang ShipTech" width={150} height={48} priority className="h-9 md:h-12 w-auto object-contain" />
               ) : (
                 <>
                   <span className="text-2xl md:text-3xl font-extrabold text-accent-500">YuJiang</span>

@@ -1,12 +1,22 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import CompanyIntro from '@/components/about/CompanyIntro';
-import FactorySection from '@/components/about/FactorySection';
-import TeamSection from '@/components/about/TeamSection';
-import CertificatesSection from '@/components/about/CertificatesSection';
-import CaseStudySection from '@/components/home/CaseStudySection';
+
+const FactorySection = dynamic(() => import('@/components/about/FactorySection'), {
+  loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+const TeamSection = dynamic(() => import('@/components/about/TeamSection'), {
+  loading: () => <div className="section-padding bg-white"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+const CertificatesSection = dynamic(() => import('@/components/about/CertificatesSection'), {
+  loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
+const CaseStudySection = dynamic(() => import('@/components/home/CaseStudySection'), {
+  loading: () => <div className="section-padding bg-white"><div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('about');

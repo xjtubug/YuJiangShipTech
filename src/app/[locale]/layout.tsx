@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import dynamic from 'next/dynamic';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -7,15 +8,17 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import WhatsAppFloat from '@/components/common/WhatsAppFloat';
-import CookieConsent from '@/components/common/CookieConsent';
-import SocialFloat from '@/components/common/SocialFloat';
-import TrackingScripts from '@/components/common/TrackingScripts';
-import VisitorTracker from '@/components/common/VisitorTracker';
 import { OrganizationSchema, WebSiteSchema } from '@/components/common/StructuredData';
-import { Toaster } from 'react-hot-toast';
 import prisma from '@/lib/prisma';
 import '../globals.css';
+
+// Lazy-load client-only widgets to reduce initial bundle size
+const WhatsAppFloat = dynamic(() => import('@/components/common/WhatsAppFloat'), { ssr: false });
+const SocialFloat = dynamic(() => import('@/components/common/SocialFloat'), { ssr: false });
+const CookieConsent = dynamic(() => import('@/components/common/CookieConsent'), { ssr: false });
+const TrackingScripts = dynamic(() => import('@/components/common/TrackingScripts'), { ssr: false });
+const VisitorTracker = dynamic(() => import('@/components/common/VisitorTracker'), { ssr: false });
+const Toaster = dynamic(() => import('react-hot-toast').then((mod) => mod.Toaster), { ssr: false });
 
 const geistSans = localFont({
   src: '../fonts/GeistVF.woff',

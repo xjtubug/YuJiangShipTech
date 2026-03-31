@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
@@ -6,7 +7,8 @@ import { getProductMetadata } from '@/lib/metadata';
 import { ProductSchema, BreadcrumbSchema } from '@/components/common/StructuredData';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import ProductDetail from '@/components/products/ProductDetail';
-import CompareDrawer from '@/components/products/CompareDrawer';
+
+const CompareDrawer = dynamic(() => import('@/components/products/CompareDrawer'), { ssr: false });
 export const revalidate = 300;
 
 const SITE_URL =
