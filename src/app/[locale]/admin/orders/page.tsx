@@ -4,15 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import {
   Plus,
   RefreshCw,
   Search,
@@ -23,11 +14,9 @@ import {
   Truck,
   Clock,
   ExternalLink,
-  TrendingUp,
-  ArrowRight,
   ShoppingCart,
   MapPin,
-  BarChart3,
+  ArrowRight,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -103,26 +92,6 @@ interface TrackingInfo {
   currentStatus: string;
   estimatedDelivery: string | null;
   events: TrackingEvent[];
-}
-
-interface AnalyticsData {
-  conversionRates: {
-    inquiryToQuotation: number;
-    quotationToOrder: number;
-    orderCompletion: number;
-  };
-  totals: {
-    inquiries: number;
-    quotations: number;
-    orders: number;
-    completedOrders: number;
-    cancelledOrders: number;
-  };
-  revenueByMonth: { month: string; revenue: number; count: number }[];
-  averageOrderValue: number;
-  totalRevenue: number;
-  statusDistribution: { status: string; count: number }[];
-  topCustomers: { companyName: string; email: string; totalValue: number; orderCount: number }[];
 }
 
 interface FormItem {
@@ -272,9 +241,6 @@ export default function OrdersPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Active view tab
-  const [activeView, setActiveView] = useState<'orders' | 'analytics'>('orders');
-
   // List state
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,10 +264,6 @@ export default function OrdersPage() {
 
   // Tracking state
   const [trackingInfo, setTrackingInfo] = useState<Record<string, TrackingInfo>>({});
-
-  // Analytics state
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // ─── Data Fetching ───────────────────────────────────────
 
@@ -327,20 +289,6 @@ export default function OrdersPage() {
     }
   }, [page, statusFilter, searchQuery]);
 
-  const fetchAnalytics = useCallback(async () => {
-    setAnalyticsLoading(true);
-    try {
-      const res = await fetch('/api/admin/orders/analytics');
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      setAnalytics(data);
-    } catch {
-      // ignore
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
-
   const fetchTracking = async (orderId: string) => {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/tracking`);
@@ -355,10 +303,6 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
-
-  useEffect(() => {
-    if (activeView === 'analytics') fetchAnalytics();
-  }, [activeView, fetchAnalytics]);
 
   // Handle fromQuotation parameter
   useEffect(() => {
@@ -519,28 +463,11 @@ export default function OrdersPage() {
             <ShoppingCart className="w-7 h-7 text-primary-600" />
             订单管理
           </h1>
-          <p className="text-sm text-gray-500 mt-1">管理订单、物流跟踪与数据分析</p>
+          <p className="text-sm text-gray-500 mt-1">管理订单与物流跟踪</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setActiveView('orders')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeView === 'orders' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Package className="w-4 h-4 inline-block mr-1" />
-              订单列表
-            </button>
-            <button
-              onClick={() => setActiveView('analytics')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeView === 'analytics' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <BarChart3 className="w-4 h-4 inline-block mr-1" />
-              数据分析
-            </button>
-          </div>
           <button
-            onClick={() => { if (activeView === 'orders') { fetchOrders(); } else { fetchAnalytics(); } }}
+            onClick={() => { fetchOrders(); }}
             className="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
             title="刷新"
           >
@@ -556,10 +483,8 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {activeView === 'orders' ? (
-        <>
-          {/* Search */}
-          <div className="relative">
+      {/* Search */}
+      <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -670,10 +595,6 @@ export default function OrdersPage() {
               </div>
             )}
           </div>
-        </>
-      ) : (
-        <AnalyticsDashboard analytics={analytics} loading={analyticsLoading} />
-      )}
 
       {/* Status Update Modal */}
       {statusUpdateId && (
@@ -1305,195 +1226,3 @@ function OrderRow({
   );
 }
 
-// ─── Analytics Dashboard ─────────────────────────────────────
-
-function AnalyticsDashboard({
-  analytics,
-  loading,
-}: {
-  analytics: AnalyticsData | null;
-  loading: boolean;
-}) {
-  if (loading || !analytics) {
-    return (
-      <div className="text-center py-20 text-gray-400">
-        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-        加载数据分析...
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Conversion Funnel */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary-600" />
-          转化漏斗
-        </h3>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          {/* Inquiry */}
-          <div className="text-center">
-            <div className="w-28 h-28 rounded-2xl bg-blue-50 border-2 border-blue-200 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-blue-700">{analytics.totals.inquiries}</p>
-              <p className="text-xs text-blue-600 mt-1">询价</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <ArrowRight className="w-6 h-6 text-gray-300 mx-auto" />
-            <p className="text-lg font-bold text-amber-600 mt-1">{analytics.conversionRates.inquiryToQuotation}%</p>
-            <p className="text-[10px] text-gray-400">转化率</p>
-          </div>
-          {/* Quotation */}
-          <div className="text-center">
-            <div className="w-28 h-28 rounded-2xl bg-amber-50 border-2 border-amber-200 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-amber-700">{analytics.totals.quotations}</p>
-              <p className="text-xs text-amber-600 mt-1">报价</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <ArrowRight className="w-6 h-6 text-gray-300 mx-auto" />
-            <p className="text-lg font-bold text-green-600 mt-1">{analytics.conversionRates.quotationToOrder}%</p>
-            <p className="text-[10px] text-gray-400">转化率</p>
-          </div>
-          {/* Order */}
-          <div className="text-center">
-            <div className="w-28 h-28 rounded-2xl bg-green-50 border-2 border-green-200 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-green-700">{analytics.totals.orders}</p>
-              <p className="text-xs text-green-600 mt-1">订单</p>
-            </div>
-          </div>
-          <div className="text-center">
-            <ArrowRight className="w-6 h-6 text-gray-300 mx-auto" />
-            <p className="text-lg font-bold text-emerald-600 mt-1">{analytics.conversionRates.orderCompletion}%</p>
-            <p className="text-[10px] text-gray-400">完成率</p>
-          </div>
-          {/* Completed */}
-          <div className="text-center">
-            <div className="w-28 h-28 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-emerald-700">{analytics.totals.completedOrders}</p>
-              <p className="text-xs text-emerald-600 mt-1">已完成</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-1">总收入（12个月）</p>
-          <p className="text-2xl font-bold text-gray-900">{fmtCurrency(analytics.totalRevenue)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-1">平均订单金额</p>
-          <p className="text-2xl font-bold text-gray-900">{fmtCurrency(analytics.averageOrderValue)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-1">总订单数</p>
-          <p className="text-2xl font-bold text-gray-900">{analytics.totals.orders}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 mb-1">取消订单</p>
-          <p className="text-2xl font-bold text-red-600">{analytics.totals.cancelledOrders}</p>
-        </div>
-      </div>
-
-      {/* Revenue Chart + Status Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">月度收入（最近12个月）</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.revenueByMonth} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={(v: string) => {
-                    const parts = v.split('-');
-                    return `${parts[1]}月`;
-                  }}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  formatter={(value: any) => [fmtCurrency(Number(value)), '收入']}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  labelFormatter={(label: any) => {
-                    const parts = String(label).split('-');
-                    return `${parts[0]}年${parts[1]}月`;
-                  }}
-                />
-                <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Status Distribution */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">订单状态分布</h3>
-          <div className="space-y-3">
-            {analytics.statusDistribution.map((s) => {
-              const total = analytics.totals.orders || 1;
-              const pct = Math.round((s.count / total) * 100);
-              return (
-                <div key={s.status}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ring-1 ring-inset ${STATUS_COLORS[s.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {STATUS_LABELS[s.status] || s.status}
-                    </span>
-                    <span className="text-gray-500">{s.count} ({pct}%)</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div
-                      className="bg-primary-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            {analytics.statusDistribution.length === 0 && (
-              <p className="text-xs text-gray-400">暂无数据</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Top Customers */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-4">客户排行（按订单金额）</h3>
-        {analytics.topCustomers.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 text-xs font-medium text-gray-500">排名</th>
-                  <th className="text-left py-2 text-xs font-medium text-gray-500">公司</th>
-                  <th className="text-left py-2 text-xs font-medium text-gray-500">邮箱</th>
-                  <th className="text-right py-2 text-xs font-medium text-gray-500">订单数</th>
-                  <th className="text-right py-2 text-xs font-medium text-gray-500">总金额</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {analytics.topCustomers.map((c, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="py-2 text-gray-400 font-medium">#{i + 1}</td>
-                    <td className="py-2 font-medium text-gray-900">{c.companyName}</td>
-                    <td className="py-2 text-gray-500">{c.email}</td>
-                    <td className="py-2 text-right">{c.orderCount}</td>
-                    <td className="py-2 text-right font-semibold text-primary-700">{fmtCurrency(c.totalValue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400">暂无数据</p>
-        )}
-      </div>
-    </div>
-  );
-}

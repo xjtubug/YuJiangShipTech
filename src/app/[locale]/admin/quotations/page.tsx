@@ -106,13 +106,11 @@ interface FormData {
 
 // ─── Constants ───────────────────────────────────────────────
 
-const STATUSES = ['all', 'draft', 'pending_approval', 'approved', 'sent', 'accepted', 'rejected'] as const;
+const STATUSES = ['all', 'draft', 'sent', 'accepted', 'rejected', 'expired'] as const;
 
 const STATUS_LABELS: Record<string, string> = {
   all: '全部',
   draft: '草稿',
-  pending_approval: '待审批',
-  approved: '已审批',
   sent: '已发送',
   accepted: '已接受',
   rejected: '已拒绝',
@@ -121,8 +119,6 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700 ring-gray-500/20',
-  pending_approval: 'bg-amber-100 text-amber-800 ring-amber-600/20',
-  approved: 'bg-blue-100 text-blue-800 ring-blue-600/20',
   sent: 'bg-indigo-100 text-indigo-800 ring-indigo-600/20',
   accepted: 'bg-green-100 text-green-800 ring-green-600/20',
   rejected: 'bg-red-100 text-red-800 ring-red-600/20',
@@ -132,11 +128,10 @@ const STATUS_COLORS: Record<string, string> = {
 const TAB_COLORS: Record<string, string> = {
   all: 'bg-primary-600 text-white',
   draft: 'bg-gray-600 text-white',
-  pending_approval: 'bg-amber-500 text-white',
-  approved: 'bg-blue-600 text-white',
   sent: 'bg-indigo-600 text-white',
   accepted: 'bg-green-600 text-white',
   rejected: 'bg-red-600 text-white',
+  expired: 'bg-orange-500 text-white',
 };
 
 const EMPTY_ITEM: FormItem = {
@@ -444,9 +439,6 @@ export default function QuotationsPage() {
         throw new Error(err.error || 'Action failed');
       }
       const actionLabels: Record<string, string> = {
-        submit_for_approval: '已提交审批',
-        approve: '已审批通过',
-        reject_approval: '已驳回',
         send: '已发送客户',
         accept: '客户已接受',
         reject: '客户已拒绝',
@@ -1003,8 +995,8 @@ function QuotationRow({
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            {/* Edit - only draft/pending */}
-            {['draft', 'pending_approval'].includes(q.status) && (
+            {/* Edit - only draft */}
+            {q.status === 'draft' && (
               <button
                 onClick={onEdit}
                 className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-600"
@@ -1021,43 +1013,8 @@ function QuotationRow({
             >
               <Download className="w-4 h-4" />
             </button>
-            {/* Submit for approval */}
+            {/* Send to customer - draft */}
             {q.status === 'draft' && (
-              <button
-                onClick={() => onAction(q.id, 'submit_for_approval')}
-                disabled={isLoading}
-                className="p-1.5 rounded hover:bg-amber-50 text-gray-400 hover:text-amber-600 disabled:opacity-50"
-                title="提交审批"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            )}
-            {/* Approve / Reject approval */}
-            {q.status === 'pending_approval' && (
-              <>
-                <button
-                  onClick={() => onAction(q.id, 'approve')}
-                  disabled={isLoading}
-                  className="p-1.5 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 disabled:opacity-50"
-                  title="审批通过"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    const reason = prompt('驳回原因：');
-                    if (reason !== null) onAction(q.id, 'reject_approval', reason);
-                  }}
-                  disabled={isLoading}
-                  className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 disabled:opacity-50"
-                  title="驳回"
-                >
-                  <XCircle className="w-4 h-4" />
-                </button>
-              </>
-            )}
-            {/* Send to customer */}
-            {q.status === 'approved' && (
               <button
                 onClick={() => onAction(q.id, 'send')}
                 disabled={isLoading}
@@ -1144,15 +1101,6 @@ function QuotationRow({
                   <span className="text-gray-500 font-medium">创建人: </span>
                   <span className="text-gray-700">{q.createdBy}</span>
                 </div>
-                {q.approvedBy && (
-                  <div>
-                    <span className="text-gray-500 font-medium">审批人: </span>
-                    <span className="text-gray-700">
-                      {q.approvedBy}
-                      {q.approvedAt && ` (${new Date(q.approvedAt).toLocaleDateString('zh-CN')})`}
-                    </span>
-                  </div>
-                )}
                 {q.sentAt && (
                   <div>
                     <span className="text-gray-500 font-medium">发送时间: </span>

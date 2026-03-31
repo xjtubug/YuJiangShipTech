@@ -7,8 +7,6 @@ import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import AuthProvider from '@/components/common/AuthProvider';
 import {
-  LayoutDashboard,
-  Users,
   MessageSquare,
   Package,
   FileText,
@@ -28,7 +26,6 @@ import {
   ClipboardList,
   ShoppingCart,
   Mail,
-  Image as ImageIcon,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -42,13 +39,10 @@ interface NotificationItem {
 }
 
 const navItems = [
-  { href: '', label: 'Dashboard', labelZh: '仪表盘', icon: LayoutDashboard, badge: '' },
-  { href: '/visitors', label: 'Visitors', labelZh: '访客管理', icon: Users, badge: 'visitors' },
   { href: '/inquiries', label: 'Inquiries', labelZh: '询价管理', icon: MessageSquare, badge: 'inquiries' },
   { href: '/quotations', label: 'Quotations', labelZh: '报价管理', icon: ClipboardList, badge: '' },
   { href: '/orders', label: 'Orders', labelZh: '订单管理', icon: ShoppingCart, badge: '' },
   { href: '/products', label: 'Products', labelZh: '产品管理', icon: Package, badge: '' },
-  { href: '/media', label: 'Media', labelZh: '媒体管理', icon: ImageIcon, badge: '' },
   { href: '/reports', label: 'Reports', labelZh: '数据报告', icon: FileText, badge: '' },
   { href: '/experts', label: 'Experts', labelZh: '专家管理', icon: UserCheck, badge: '' },
   { href: '/customers', label: 'Customers', labelZh: '客户管理', icon: UsersRound, badge: '' },
