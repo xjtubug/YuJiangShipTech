@@ -19,6 +19,7 @@ import {
   X,
   Package,
   ShoppingCart,
+  Loader2,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -921,8 +922,9 @@ export default function QuotationsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-6 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                className="px-6 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center gap-2"
               >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 {saving ? '保存中...' : editingId ? '更新报价' : '创建报价'}
               </button>
             </div>

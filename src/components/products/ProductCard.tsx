@@ -1,24 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
 import {
-  Package,
   ShoppingCart,
   Star,
-  Anchor,
-  Compass,
-  Gauge,
-  ShieldCheck,
-  Droplets,
   GitCompareArrows,
 } from 'lucide-react';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
 import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/image-utils';
+import { parseProductImages } from '@/lib/parse-product-images';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 interface ProductData {
   id: string;
@@ -58,21 +55,6 @@ function getLocalizedField(obj: any, field: string, locale: string): string {
   return obj[key] || obj[`${field}En`] || '';
 }
 
-const CATEGORY_ICONS: Record<string, typeof Package> = {
-  valves: Gauge,
-  pumps: Droplets,
-  deck: Anchor,
-  navigation: Compass,
-  safety: ShieldCheck,
-};
-
-function getCategoryIcon(categorySlug: string) {
-  const match = Object.entries(CATEGORY_ICONS).find(([key]) =>
-    categorySlug.toLowerCase().includes(key)
-  );
-  return match ? match[1] : Package;
-}
-
 export default function ProductCard({ product, locale }: ProductCardProps) {
   const t = useTranslations('products');
   const tc = useTranslations('common');
@@ -87,18 +69,11 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
 
   const productName = getLocalizedField(product, 'name', effectiveLocale);
   const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
-  const productImages = (() => {
-    try {
-      const parsed = JSON.parse(product.images || '[]');
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  })();
+  const productImages = parseProductImages(product.images);
   const primaryImage = productImages[0] ? getImageUrl(productImages[0]) : null;
+  const [imgFailed, setImgFailed] = useState(false);
 
   const convertedPrice = convertFromUsd(product.priceUsd, currency);
-  const CategoryIcon = getCategoryIcon(product.category.slug);
 
   const handleAddToInquiry = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -108,6 +83,10 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
       productName: product.nameEn,
       quantity: product.moq || 1,
       unit: 'pcs',
+    });
+    toast.success(`${productName} — ${tc('addedToInquiry')}`, {
+      duration: 2000,
+      id: `inquiry-${product.id}`,
     });
   };
 
@@ -159,17 +138,25 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
       </button>
 
       {/* Product image */}
+      <Link href={`/products/${product.slug}`}>
       <div className="relative h-48 bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center overflow-hidden">
-        {primaryImage ? (
+        {primaryImage && !imgFailed ? (
           <Image
             src={primaryImage}
             alt={productName}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImgFailed(true)}
           />
         ) : (
-          <CategoryIcon className="h-16 w-16 text-primary-300 group-hover:scale-110 transition-transform duration-300" />
+          <Image
+            src="/images/default-product.svg"
+            alt={productName}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-contain p-6 group-hover:scale-105 transition-transform duration-300"
+          />
         )}
         {product.featured && (
           <span className="absolute top-3 left-3 flex items-center gap-1 bg-accent-500 text-white text-xs font-bold px-2 py-1 rounded">
@@ -181,6 +168,7 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
           {tc('moq')}: {product.moq} {tc('pcs')}
         </span>
       </div>
+      </Link>
 
       {/* Content */}
       <div className="p-5">
@@ -205,13 +193,13 @@ export default function ProductCard({ product, locale }: ProductCardProps) {
         <div className="flex gap-2">
           <Link
             href={`/products/${product.slug}`}
-            className="flex-1 text-center text-sm font-medium py-2 rounded-lg border border-primary-200 text-primary-700 hover:bg-primary-50 transition-colors"
+            className="flex-1 text-center text-sm font-medium py-2 rounded-lg border border-primary-200 text-primary-700 hover:bg-primary-50 active:bg-primary-100 active:scale-[0.95] transition-all duration-150"
           >
             {t('viewDetails')}
           </Link>
           <button
             onClick={handleAddToInquiry}
-            className="flex items-center justify-center gap-1 flex-1 text-sm font-medium py-2 rounded-lg bg-accent-500 text-white hover:bg-accent-600 transition-colors"
+            className="flex items-center justify-center gap-1 flex-1 text-sm font-medium py-2 rounded-lg bg-accent-500 text-white hover:bg-accent-600 active:bg-accent-700 active:scale-[0.95] transition-all duration-150"
           >
             <ShoppingCart className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{tc('addToInquiry')}</span>

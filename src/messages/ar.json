@@ -14,6 +14,7 @@
 		"share": "مشاركة",
 		"compare": "مقارنة",
 		"addToInquiry": "إضافة إلى قائمة الاستفسار",
+		"addedToInquiry": "تمت الإضافة إلى قائمة الاستفسار",
 		"sendMessage": "إرسال رسالة",
 		"readMore": "اقرأ المزيد",
 		"close": "إغلاق",
@@ -124,7 +125,16 @@
 		"invalidEmail": "يرجى إدخال بريد إلكتروني صالح",
 		"inquiryCart": "قائمة الاستفسار",
 		"cartEmpty": "قائمة الاستفسار فارغة",
-		"cartItems": "{count} عنصر في القائمة"
+		"cartItems": "{count} عنصر في القائمة",
+		"selectCategory": "فئة المنتج",
+		"selectCategoryPlaceholder": "-- اختر الفئة --",
+		"selectProduct": "اختر المنتج",
+		"selectProductPlaceholder": "-- اختر المنتج --",
+		"selectCategoryFirst": "يرجى اختيار الفئة أولاً",
+		"noProductsInCategory": "لا توجد منتجات في هذه الفئة",
+		"allInCategory": "الكل",
+		"orTypeProductName": "أو اكتب اسم المنتج يدوياً",
+		"productsAvailable": "منتج متاح"
 	},
 	"about": {
 		"title": "عن يوجيانغ لتكنولوجيا السفن",
@@ -138,6 +148,8 @@
 		"qualifications": "المؤهلات والشهادات",
 		"qualDesc": "نحمل العديد من الشهادات الدولية بما في ذلك ISO 9001 وISO 14001 وCE وDNV-GL وCCS.",
 		"factoryTour": "جولة افتراضية 360° في المصنع",
+		"location": "موقعنا",
+		"locationDesc": "قم بزيارة مقرنا الرئيسي ومنشأة الإنتاج في نينغبو، تشجيانغ، الصين.",
 		"history": "تاريخ الشركة",
 		"vision": "رؤيتنا",
 		"visionDesc": "أن نكون المزوّد الأكثر موثوقية للمعدات البحرية في العالم.",
@@ -160,6 +172,7 @@
 		"formSubject": "الموضوع",
 		"formMessage": "الرسالة",
 		"formSubmit": "إرسال الرسالة",
+		"formSending": "جارٍ الإرسال...",
 		"formSuccess": "تم إرسال الرسالة بنجاح! سنرد عليكم خلال 24 ساعة.",
 		"formError": "فشل إرسال الرسالة. يرجى المحاولة مرة أخرى.",
 		"findUs": "موقعنا على الخريطة"

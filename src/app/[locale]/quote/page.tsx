@@ -21,11 +21,46 @@ export default async function QuotePage() {
   const t = await getTranslations('inquiry');
   const navT = await getTranslations('nav');
 
-  const products = await prisma.product.findMany({
-    where: { published: true },
-    select: { id: true, nameEn: true, nameZh: true, nameJa: true, nameAr: true, sku: true },
-    orderBy: { nameEn: 'asc' },
-  });
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      where: { published: true },
+      select: {
+        id: true,
+        nameEn: true,
+        nameZh: true,
+        nameJa: true,
+        nameAr: true,
+        sku: true,
+        categoryId: true,
+      },
+      orderBy: { nameEn: 'asc' },
+    }),
+    prisma.category.findMany({
+      select: {
+        id: true,
+        slug: true,
+        nameEn: true,
+        nameZh: true,
+        nameJa: true,
+        nameAr: true,
+        parentId: true,
+        children: {
+          select: {
+            id: true,
+            slug: true,
+            nameEn: true,
+            nameZh: true,
+            nameJa: true,
+            nameAr: true,
+            parentId: true,
+          },
+          orderBy: { nameEn: 'asc' },
+        },
+      },
+      where: { parentId: null },
+      orderBy: { nameEn: 'asc' },
+    }),
+  ]);
 
   const serializedProducts = products.map((p) => ({
     id: p.id,
@@ -34,6 +69,26 @@ export default async function QuotePage() {
     nameJa: p.nameJa,
     nameAr: p.nameAr,
     sku: p.sku,
+    categoryId: p.categoryId,
+  }));
+
+  const serializedCategories = categories.map((c) => ({
+    id: c.id,
+    slug: c.slug,
+    nameEn: c.nameEn,
+    nameZh: c.nameZh,
+    nameJa: c.nameJa,
+    nameAr: c.nameAr,
+    parentId: c.parentId,
+    children: c.children.map((ch) => ({
+      id: ch.id,
+      slug: ch.slug,
+      nameEn: ch.nameEn,
+      nameZh: ch.nameZh,
+      nameJa: ch.nameJa,
+      nameAr: ch.nameAr,
+      parentId: ch.parentId,
+    })),
   }));
 
   return (
@@ -57,7 +112,7 @@ export default async function QuotePage() {
           <div className="grid lg:grid-cols-3 gap-10">
             {/* Main Quote Form */}
             <div className="lg:col-span-2">
-              <QuoteForm products={serializedProducts} />
+              <QuoteForm products={serializedProducts} categories={serializedCategories} />
             </div>
             {/* Inquiry Cart Sidebar */}
             <div className="lg:col-span-1">

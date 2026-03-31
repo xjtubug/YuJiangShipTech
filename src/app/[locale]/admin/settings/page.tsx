@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Settings, Save, Loader2, Plus, Trash2, Upload, Image as ImageIcon, Mail, Building2, DollarSign, X } from 'lucide-react';
+import { Settings, Save, Loader2, Plus, Trash2, Upload, Image as ImageIcon, Mail, Building2, DollarSign, X, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/image-utils';
@@ -13,12 +13,18 @@ interface Setting {
 }
 
 const BASIC_KEYS = ['company_name', 'company_tagline', 'company_email', 'company_phone', 'company_address'];
+const LOCATION_KEYS = ['company_lat', 'company_lng', 'google_maps_api_key'];
 const BASIC_LABELS: Record<string, string> = {
   company_name: '公司名称',
   company_tagline: '公司标语',
   company_email: '公司邮箱',
   company_phone: '联系电话',
   company_address: '公司地址',
+};
+const LOCATION_LABELS: Record<string, string> = {
+  company_lat: '纬度 (Latitude)',
+  company_lng: '经度 (Longitude)',
+  google_maps_api_key: 'Google Maps API Key',
 };
 
 export default function SettingsPage() {
@@ -148,7 +154,7 @@ export default function SettingsPage() {
 
   const logoUrl = getSettingValue('company_logo');
   const advancedSettings = settings.filter(
-    (s) => !BASIC_KEYS.includes(s.key) && s.key !== 'company_logo' && s.key !== 'inquiry_email'
+    (s) => !BASIC_KEYS.includes(s.key) && !LOCATION_KEYS.includes(s.key) && s.key !== 'company_logo' && s.key !== 'inquiry_email'
   );
 
   if (loading) {
@@ -287,6 +293,61 @@ export default function SettingsPage() {
             </div>
           </div>
           <p className="mt-3 text-xs text-gray-400">客户提交询价单后，系统将发送通知到此邮箱。</p>
+        </div>
+      </div>
+
+      {/* Location & Map Settings */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <h3 className="font-semibold text-gray-800">位置与地图设置</h3>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {LOCATION_KEYS.map((key) => (
+            <div key={key} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="sm:w-1/3">
+                <label className="text-sm font-medium text-gray-700">{LOCATION_LABELS[key]}</label>
+                <p className="text-xs text-gray-400 mt-0.5">{key}</p>
+              </div>
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={getSettingValue(key)}
+                  onChange={(e) => updateSetting(key, e.target.value)}
+                  placeholder={
+                    key === 'company_lat' ? '例如: 29.8683' :
+                    key === 'company_lng' ? '例如: 121.5440' :
+                    '可选，留空则使用免费嵌入模式'
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="p-6 border-t border-gray-100">
+          <p className="text-xs text-gray-400 mb-4">
+            设置经纬度后，联系我们页面和关于我们页面将显示 Google Maps 地图。留空则默认显示宁波位置。
+          </p>
+          {/* Map Preview */}
+          <div className="rounded-xl overflow-hidden border border-gray-200">
+            <p className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-500">地图预览</p>
+            <iframe
+              src={(() => {
+                const lat = parseFloat(getSettingValue('company_lat')) || 29.8683;
+                const lng = parseFloat(getSettingValue('company_lng')) || 121.544;
+                const apiKey = getSettingValue('google_maps_api_key');
+                return apiKey
+                  ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${lat},${lng}&zoom=14`
+                  : `https://maps.google.com/maps?q=${lat},${lng}&z=14&output=embed`;
+              })()}
+              className="w-full h-[300px] border-0"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Map Preview"
+            />
+          </div>
         </div>
       </div>
 

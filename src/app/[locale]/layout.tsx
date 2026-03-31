@@ -13,12 +13,13 @@ import prisma from '@/lib/prisma';
 import '../globals.css';
 
 // Lazy-load client-only widgets to reduce initial bundle size
-const WhatsAppFloat = dynamic(() => import('@/components/common/WhatsAppFloat'), { ssr: false });
+const SmartChatWidget = dynamic(() => import('@/components/common/SmartChatWidget'), { ssr: false });
 const SocialFloat = dynamic(() => import('@/components/common/SocialFloat'), { ssr: false });
 const CookieConsent = dynamic(() => import('@/components/common/CookieConsent'), { ssr: false });
 const TrackingScripts = dynamic(() => import('@/components/common/TrackingScripts'), { ssr: false });
 const VisitorTracker = dynamic(() => import('@/components/common/VisitorTracker'), { ssr: false });
 const Toaster = dynamic(() => import('react-hot-toast').then((mod) => mod.Toaster), { ssr: false });
+const RouteProgress = dynamic(() => import('@/components/common/RouteProgress'), { ssr: false });
 
 const geistSans = localFont({
   src: '../fonts/GeistVF.woff',
@@ -122,12 +123,13 @@ export default async function LocaleLayout({
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <NextIntlClientProvider messages={messages}>
+        <RouteProgress />
         <OrganizationSchema />
         <WebSiteSchema locale={locale} />
         <Header initialLogoUrl={logoUrl} />
         <main className="min-h-screen">{children}</main>
         <Footer />
-        <WhatsAppFloat />
+        <SmartChatWidget />
         <SocialFloat />
         <CookieConsent />
         <TrackingScripts />

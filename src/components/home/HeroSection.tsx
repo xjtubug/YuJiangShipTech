@@ -121,7 +121,7 @@ export default function HeroSection({ searchTags = [] }: { searchTags?: SearchTa
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-lg border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-colors duration-200 text-base"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-lg border-2 border-white/30 text-white font-semibold hover:bg-white/10 active:bg-white/20 active:scale-[0.97] transition-all duration-200 text-base"
               >
                 {t('cta2')}
               </Link>

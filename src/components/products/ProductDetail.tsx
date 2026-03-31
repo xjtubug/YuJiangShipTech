@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart,
   FileText,
-  Package,
   GitCompareArrows,
   Play,
   Download,
@@ -16,11 +15,6 @@ import {
   Clock,
   Boxes,
   ChevronRight,
-  Anchor,
-  Gauge,
-  Compass,
-  ShieldCheck,
-  Droplets,
 } from 'lucide-react';
 import ShareButtons from '@/components/common/ShareButtons';
 import ProductSpecs from './ProductSpecs';
@@ -29,6 +23,8 @@ import ProductCard from './ProductCard';
 import { useInquiryStore, useCurrencyStore, useCompareStore } from '@/lib/store';
 import { formatPrice, convertFromUsd, cn } from '@/lib/utils';
 import { getImageUrl } from '@/lib/image-utils';
+import { parseProductImages } from '@/lib/parse-product-images';
+import ImageLightbox from './ImageLightbox';
 
 interface Review {
   id: string;
@@ -125,21 +121,6 @@ function getLocalizedField(obj: any, field: string, locale: string): string {
   return obj[key] || obj[`${field}En`] || '';
 }
 
-const CATEGORY_ICONS: Record<string, typeof Package> = {
-  valves: Gauge,
-  pumps: Droplets,
-  deck: Anchor,
-  navigation: Compass,
-  safety: ShieldCheck,
-};
-
-function getCategoryIcon(categorySlug: string) {
-  const match = Object.entries(CATEGORY_ICONS).find(([key]) =>
-    categorySlug.toLowerCase().includes(key)
-  );
-  return match ? match[1] : Package;
-}
-
 const TABS = ['description', 'specifications', 'videoDemo', 'customerReviews', 'downloadPdf'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -180,6 +161,12 @@ function getYouTubeEmbedUrl(url: string): string {
   return url;
 }
 
+function getYouTubeThumbnail(url: string): string | null {
+  const embedUrl = getYouTubeEmbedUrl(url);
+  const match = embedUrl.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
+}
+
 export default function ProductDetail({
   product,
   relatedProducts,
@@ -203,17 +190,24 @@ export default function ProductDetail({
   const productDesc = getLocalizedField(product, 'desc', effectiveLocale);
   const categoryName = getLocalizedField(product.category, 'name', effectiveLocale);
   const convertedPrice = convertFromUsd(product.priceUsd, currency);
-  const CategoryIcon = getCategoryIcon(product.category.slug);
 
   // Parse images array
-  let imagesList: string[] = [];
-  try {
-    imagesList = JSON.parse(product.images || '[]');
-  } catch {
-    imagesList = [];
-  }
-  const normalizedImages = imagesList.map((image) => getImageUrl(image)).filter(Boolean);
-  const placeholderCount = Math.max(3, normalizedImages.length || 3);
+  const normalizedImages = parseProductImages(product.images)
+    .map((image) => getImageUrl(image))
+    .filter(Boolean);
+  const hasImages = normalizedImages.length > 0;
+  const hasVideo = !!product.videoUrl;
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
+  const [showingVideo, setShowingVideo] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = useCallback((index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  }, []);
+
+  const videoThumbnail = hasVideo ? getYouTubeThumbnail(product.videoUrl!) : null;
 
   const [siteUrl, setSiteUrl] = useState<string>('');
 
@@ -262,10 +256,26 @@ export default function ProductDetail({
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Main image */}
-          <div className="aspect-square bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
-            {normalizedImages[mainImageIndex] ? (
+          {/* Main image / video */}
+          <div className={cn(
+            'bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl flex items-center justify-center mb-4 overflow-hidden',
+            showingVideo ? 'aspect-video' : 'aspect-square'
+          )}>
+            {showingVideo && hasVideo ? (
               <div className="relative w-full h-full">
+                <iframe
+                  src={getYouTubeEmbedUrl(product.videoUrl!)}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={productName}
+                />
+              </div>
+            ) : hasImages && normalizedImages[mainImageIndex] && !failedImages.has(mainImageIndex) ? (
+              <button
+                onClick={() => openLightbox(mainImageIndex)}
+                className="relative w-full h-full cursor-zoom-in"
+              >
                 <Image
                   src={normalizedImages[mainImageIndex]}
                   alt={productName}
@@ -273,45 +283,88 @@ export default function ProductDetail({
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
+                  onError={() => setFailedImages((prev) => new Set(prev).add(mainImageIndex))}
                 />
-              </div>
+              </button>
             ) : (
-              <div suppressHydrationWarning>
-                <CategoryIcon className="h-32 w-32 text-primary-300" />
+              <div className="relative w-full h-full">
+                <Image
+                  src="/images/default-product.svg"
+                  alt={productName}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-contain p-8"
+                />
               </div>
             )}
           </div>
           {/* Thumbnails */}
-          <div className="grid grid-cols-4 gap-3">
-            {Array.from({ length: placeholderCount }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setMainImageIndex(i)}
-                className={cn(
-                  'aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg flex items-center justify-center transition-all',
-                  mainImageIndex === i
-                    ? 'ring-2 ring-secondary-500 ring-offset-2'
-                    : 'opacity-60 hover:opacity-100'
-                )}
-              >
-                {normalizedImages[i] ? (
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={normalizedImages[i]}
-                      alt={`${productName} ${i + 1}`}
-                      fill
-                      sizes="120px"
-                      className="object-cover rounded-lg"
-                    />
+          {(hasImages || hasVideo) && (
+            <div className="grid grid-cols-4 gap-3">
+              {normalizedImages.map((img, i) => (
+                <button
+                  key={`img-${i}`}
+                  onClick={() => { setMainImageIndex(i); setShowingVideo(false); }}
+                  className={cn(
+                    'aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg flex items-center justify-center transition-all overflow-hidden',
+                    !showingVideo && mainImageIndex === i
+                      ? 'ring-2 ring-secondary-500 ring-offset-2'
+                      : 'opacity-60 hover:opacity-100'
+                  )}
+                >
+                  {!failedImages.has(i) ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={img}
+                        alt={`${productName} ${i + 1}`}
+                        fill
+                        sizes="120px"
+                        className="object-cover rounded-lg"
+                        onError={() => setFailedImages((prev) => new Set(prev).add(i))}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src="/images/default-product.svg"
+                        alt={`${productName} ${i + 1}`}
+                        fill
+                        sizes="120px"
+                        className="object-contain rounded-lg p-2"
+                      />
+                    </div>
+                  )}
+                </button>
+              ))}
+              {hasVideo && (
+                <button
+                  onClick={() => setShowingVideo(true)}
+                  className={cn(
+                    'aspect-square bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg flex items-center justify-center transition-all overflow-hidden relative',
+                    showingVideo
+                      ? 'ring-2 ring-secondary-500 ring-offset-2'
+                      : 'opacity-60 hover:opacity-100'
+                  )}
+                >
+                  {videoThumbnail ? (
+                    <div className="relative w-full h-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={videoThumbnail}
+                        alt={`${productName} video`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full bg-primary-800 rounded-lg" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                    <Play className="w-6 h-6 text-white fill-white" />
                   </div>
-                ) : (
-                  <div suppressHydrationWarning>
-                    <CategoryIcon className="h-8 w-8 text-primary-300" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+                </button>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Product info */}
@@ -632,6 +685,19 @@ export default function ProductDetail({
           </div>
         </div>
       )}
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {lightboxOpen && hasImages && (
+          <ImageLightbox
+            images={normalizedImages}
+            currentIndex={lightboxIndex}
+            alt={productName}
+            onClose={() => setLightboxOpen(false)}
+            onNavigate={setLightboxIndex}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -14,6 +14,7 @@
 		"share": "共有",
 		"compare": "比較",
 		"addToInquiry": "問い合わせリストに追加",
+		"addedToInquiry": "問い合わせリストに追加しました",
 		"sendMessage": "メッセージを送信",
 		"readMore": "続きを読む",
 		"close": "閉じる",
@@ -124,7 +125,16 @@
 		"invalidEmail": "有効なメールアドレスを入力してください",
 		"inquiryCart": "問い合わせリスト",
 		"cartEmpty": "問い合わせリストは空です",
-		"cartItems": "問い合わせリストに {count} 件の製品があります"
+		"cartItems": "問い合わせリストに {count} 件の製品があります",
+		"selectCategory": "製品カテゴリー",
+		"selectCategoryPlaceholder": "-- カテゴリーを選択 --",
+		"selectProduct": "製品を選択",
+		"selectProductPlaceholder": "-- 製品を選択 --",
+		"selectCategoryFirst": "先にカテゴリーを選択してください",
+		"noProductsInCategory": "このカテゴリーには製品がありません",
+		"allInCategory": "すべて",
+		"orTypeProductName": "または製品名を手入力",
+		"productsAvailable": "件の製品"
 	},
 	"about": {
 		"title": "禺疆船艇科技について",
@@ -138,6 +148,8 @@
 		"qualifications": "資格・認証",
 		"qualDesc": "ISO 9001、ISO 14001、CE、DNV-GL、CCSなど、多数の国際認証を取得しています。",
 		"factoryTour": "360° 工場見学",
+		"location": "所在地",
+		"locationDesc": "中国浙江省寧波市にある本社と生産拠点をご案内します。",
 		"history": "沿革",
 		"vision": "ビジョン",
 		"visionDesc": "世界で最も信頼される船艇機器プロバイダーを目指します。",
@@ -160,6 +172,7 @@
 		"formSubject": "件名",
 		"formMessage": "メッセージ",
 		"formSubmit": "メッセージを送信",
+		"formSending": "送信中...",
 		"formSuccess": "メッセージが正常に送信されました。24時間以内にご返信いたします。",
 		"formError": "メッセージの送信に失敗しました。もう一度お試しください。",
 		"findUs": "地図で所在地を確認"

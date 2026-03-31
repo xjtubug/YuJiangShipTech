@@ -14,6 +14,7 @@
 		"share": "Share",
 		"compare": "Compare",
 		"addToInquiry": "Add to Inquiry",
+		"addedToInquiry": "added to inquiry",
 		"sendMessage": "Send Message",
 		"readMore": "Read More",
 		"close": "Close",
@@ -124,7 +125,16 @@
 		"invalidEmail": "Please enter a valid email address",
 		"inquiryCart": "Inquiry Cart",
 		"cartEmpty": "Your inquiry cart is empty",
-		"cartItems": "{count} items in cart"
+		"cartItems": "{count} items in cart",
+		"selectCategory": "Product Category",
+		"selectCategoryPlaceholder": "-- Select Category --",
+		"selectProduct": "Select Product",
+		"selectProductPlaceholder": "-- Select Product --",
+		"selectCategoryFirst": "Please select a category first",
+		"noProductsInCategory": "No products in this category",
+		"allInCategory": "All",
+		"orTypeProductName": "Or type product name manually",
+		"productsAvailable": "products available"
 	},
 	"about": {
 		"title": "About YuJiang ShipTechnology",
@@ -138,6 +148,8 @@
 		"qualifications": "Qualifications & Certifications",
 		"qualDesc": "We hold numerous international certifications including ISO 9001, ISO 14001, CE, DNV-GL, and CCS.",
 		"factoryTour": "360° Factory Tour",
+		"location": "Our Location",
+		"locationDesc": "Visit our headquarters and production facility in Ningbo, Zhejiang, China.",
 		"history": "Company History",
 		"vision": "Our Vision",
 		"visionDesc": "To be the world's most trusted marine equipment provider.",
@@ -160,6 +172,7 @@
 		"formSubject": "Subject",
 		"formMessage": "Message",
 		"formSubmit": "Send Message",
+		"formSending": "Sending...",
 		"formSuccess": "Message sent successfully! We will respond within 24 hours.",
 		"formError": "Failed to send message. Please try again.",
 		"findUs": "Find Us on Map"

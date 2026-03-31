@@ -14,6 +14,7 @@
 		"share": "分享",
 		"compare": "对比",
 		"addToInquiry": "加入询价单",
+		"addedToInquiry": "已加入询价单",
 		"sendMessage": "发送消息",
 		"readMore": "阅读更多",
 		"close": "关闭",
@@ -124,7 +125,16 @@
 		"invalidEmail": "请输入有效的邮箱地址",
 		"inquiryCart": "询价单",
 		"cartEmpty": "询价单为空",
-		"cartItems": "询价单中有 {count} 件产品"
+		"cartItems": "询价单中有 {count} 件产品",
+		"selectCategory": "产品分类",
+		"selectCategoryPlaceholder": "-- 请选择分类 --",
+		"selectProduct": "选择产品",
+		"selectProductPlaceholder": "-- 请选择产品 --",
+		"selectCategoryFirst": "请先选择产品分类",
+		"noProductsInCategory": "该分类暂无产品",
+		"allInCategory": "全部",
+		"orTypeProductName": "或手动输入产品名称",
+		"productsAvailable": "个产品可选"
 	},
 	"about": {
 		"title": "关于禺疆船艇科技",
@@ -138,6 +148,8 @@
 		"qualifications": "资质与认证",
 		"qualDesc": "我们持有 ISO 9001、ISO 14001、CE、DNV-GL、CCS 等多项国际权威认证。",
 		"factoryTour": "360° 工厂全景",
+		"location": "公司位置",
+		"locationDesc": "欢迎莅临我们位于中国江苏省苏州市的总部和生产基地。",
 		"history": "发展历程",
 		"vision": "企业愿景",
 		"visionDesc": "成为全球最值得信赖的船艇设备供应商。",
@@ -160,6 +172,7 @@
 		"formSubject": "主题",
 		"formMessage": "留言内容",
 		"formSubmit": "发送消息",
+		"formSending": "发送中...",
 		"formSuccess": "消息发送成功！我们将在24小时内回复您。",
 		"formError": "消息发送失败，请稍后重试。",
 		"findUs": "在地图上查找我们"

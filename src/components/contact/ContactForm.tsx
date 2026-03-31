@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_TYPES = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.zip';
 
 interface FormData {
   name: string;
@@ -33,6 +36,10 @@ export default function ContactForm() {
     message: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [attachmentName, setAttachmentName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -63,6 +70,37 @@ export default function ContactForm() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File size must be under 10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setAttachmentUrl(data.url);
+      setAttachmentName(file.name);
+    } catch {
+      toast.error('File upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachmentUrl('');
+    setAttachmentName('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -72,13 +110,15 @@ export default function ContactForm() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, attachmentUrl: attachmentUrl || undefined }),
       });
 
       if (!res.ok) throw new Error('Failed');
 
       toast.success(t('formSuccess'));
       setFormData({ name: '', email: '', company: '', phone: '', subject: '', message: '' });
+      setAttachmentUrl('');
+      setAttachmentName('');
     } catch {
       toast.error(t('formError'));
     } finally {
@@ -206,6 +246,47 @@ export default function ContactForm() {
           )}
         </div>
 
+        {/* Attachment */}
+        <div>
+          <label className={labelClass}>📎 Attach file (optional)</label>
+          {attachmentName ? (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-primary-200 bg-primary-50">
+              <Paperclip className="w-4 h-4 text-primary-600 flex-shrink-0" />
+              <span className="text-sm text-primary-700 truncate flex-1">{attachmentName}</span>
+              <button
+                type="button"
+                onClick={removeAttachment}
+                className="p-1 rounded-full hover:bg-primary-100 text-primary-400 hover:text-red-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-3 w-full rounded-lg border-2 border-dashed border-primary-200 text-primary-400 hover:border-secondary-500 hover:text-secondary-600 transition-colors disabled:opacity-60"
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Paperclip className="w-5 h-5" />
+              )}
+              <span className="text-sm">
+                {uploading ? 'Uploading...' : 'PDF, images, docs — max 10MB'}
+              </span>
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileSelect}
+          />
+        </div>
+
         {/* Submit */}
         <button
           type="submit"
@@ -217,7 +298,7 @@ export default function ContactForm() {
           ) : (
             <Send className="w-5 h-5" />
           )}
-          {loading ? '...' : t('formSubmit')}
+          {loading ? t('formSending') : t('formSubmit')}
         </button>
       </form>
     </motion.div>

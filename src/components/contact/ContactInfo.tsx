@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import GoogleMap, { DEFAULT_LAT, DEFAULT_LNG } from '@/components/common/GoogleMap';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,8 +23,27 @@ const contactItems = [
   { key: 'workingHours', icon: Clock, valueKey: 'workingHoursValue', color: 'bg-marine-500' },
 ] as const;
 
+interface LocationSettings {
+  company_lat?: string;
+  company_lng?: string;
+  company_address?: string;
+  google_maps_api_key?: string;
+}
+
 export default function ContactInfo() {
   const t = useTranslations('contact');
+  const [location, setLocation] = useState<LocationSettings>({});
+
+  useEffect(() => {
+    fetch('/api/settings/public?keys=company_lat,company_lng,company_address,google_maps_api_key')
+      .then((res) => res.json())
+      .then((data) => setLocation(data))
+      .catch(() => {});
+  }, []);
+
+  const lat = location.company_lat ? parseFloat(location.company_lat) : DEFAULT_LAT;
+  const lng = location.company_lng ? parseFloat(location.company_lng) : DEFAULT_LNG;
+  const apiKey = location.google_maps_api_key || undefined;
 
   return (
     <motion.div
@@ -57,18 +78,15 @@ export default function ContactInfo() {
         );
       })}
 
-      {/* Map Placeholder */}
+      {/* Google Maps */}
       <motion.div variants={fadeUp}>
         <h3 className="font-bold text-primary-800 mb-3">{t('findUs')}</h3>
-        <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-primary-200 bg-primary-50 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-12 h-12 text-primary-300 mx-auto mb-2" />
-            <p className="text-primary-500 font-medium text-sm">Google Maps</p>
-            <p className="text-primary-400 text-xs mt-1">
-              Ningbo, Zhejiang, China
-            </p>
-          </div>
-        </div>
+        <GoogleMap
+          lat={lat}
+          lng={lng}
+          apiKey={apiKey}
+          className="aspect-[4/3]"
+        />
       </motion.div>
 
       {/* Social Media Links */}

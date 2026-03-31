@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Upload, Send, Loader2, FileCheck, X } from 'lucide-react';
+import { Plus, Trash2, Upload, Send, Loader2, FileCheck, X, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useInquiryStore } from '@/lib/store';
 
@@ -14,6 +14,18 @@ interface ProductOption {
   nameJa: string;
   nameAr: string;
   sku: string;
+  categoryId: string;
+}
+
+interface CategoryOption {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameZh: string;
+  nameJa: string;
+  nameAr: string;
+  parentId: string | null;
+  children?: CategoryOption[];
 }
 
 interface ProductItem {
@@ -22,6 +34,7 @@ interface ProductItem {
   quantity: number;
   unit: string;
   specs: string;
+  categoryId: string;
 }
 
 interface CompanyInfo {
@@ -39,6 +52,11 @@ interface FormErrors {
   items?: string;
 }
 
+interface QuoteFormProps {
+  products: ProductOption[];
+  categories: CategoryOption[];
+}
+
 const UNITS = ['pcs', 'sets', 'meters', 'kg', 'tons'];
 
 const COUNTRIES = [
@@ -49,14 +67,16 @@ const COUNTRIES = [
   'Russia', 'Australia', 'Other',
 ];
 
-const nameFieldMap: Record<string, keyof ProductOption> = {
+type LocaleNameField = 'nameEn' | 'nameZh' | 'nameJa' | 'nameAr';
+
+const nameFieldMap: Record<string, LocaleNameField> = {
   en: 'nameEn',
   zh: 'nameZh',
   ja: 'nameJa',
   ar: 'nameAr',
 };
 
-export default function QuoteForm({ products }: { products: ProductOption[] }) {
+export default function QuoteForm({ products, categories }: QuoteFormProps) {
   const t = useTranslations('inquiry');
   const locale = useLocale();
   const inquiryStore = useInquiryStore();
@@ -70,7 +90,7 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   });
 
   const [items, setItems] = useState<ProductItem[]>([
-    { productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '' },
+    { productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '', categoryId: '' },
   ]);
 
   const [techRequirements, setTechRequirements] = useState('');
@@ -84,6 +104,29 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   const [inquiryRef, setInquiryRef] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Build a flat list of all category IDs (including subcategories) for lookup
+  const allCategories = useMemo(() => {
+    const flat: CategoryOption[] = [];
+    for (const cat of categories) {
+      flat.push(cat);
+      if (cat.children) {
+        for (const child of cat.children) {
+          flat.push(child);
+        }
+      }
+    }
+    return flat;
+  }, [categories]);
+
+  // Map from product ID to its categoryId for pre-populating category from store
+  const productCategoryMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of products) {
+      m.set(p.id, p.categoryId);
+    }
+    return m;
+  }, [products]);
+
   // Pre-populate from inquiry store
   useEffect(() => {
     if (inquiryStore.items.length > 0) {
@@ -93,14 +136,32 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
         quantity: si.quantity,
         unit: si.unit,
         specs: si.specs || '',
+        categoryId: productCategoryMap.get(si.productId) || '',
       }));
       setItems(storeItems);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getLocalizedName = (product: ProductOption): string => {
+  const getLocalizedName = (item: { nameEn: string; nameZh: string; nameJa: string; nameAr: string }): string => {
     const field = nameFieldMap[locale] || 'nameEn';
-    return product[field] || product.nameEn;
+    return item[field] || item.nameEn;
+  };
+
+  // Get products filtered by categoryId (includes subcategory products)
+  const getProductsForCategory = (categoryId: string): ProductOption[] => {
+    if (!categoryId) return [];
+    // Collect the selected category + its children IDs
+    const cat = allCategories.find((c) => c.id === categoryId);
+    if (!cat) return [];
+    const ids = new Set<string>([cat.id]);
+    // If it's a parent category, include children
+    const parentCat = categories.find((c) => c.id === categoryId);
+    if (parentCat?.children) {
+      for (const child of parentCat.children) {
+        ids.add(child.id);
+      }
+    }
+    return products.filter((p) => ids.has(p.categoryId));
   };
 
   const handleCompanyChange = (
@@ -123,6 +184,16 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
     );
   };
 
+  const handleCategorySelect = (index: number, categoryId: string) => {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? { ...item, categoryId, productId: '', productName: '' }
+          : item
+      )
+    );
+  };
+
   const handleProductSelect = (index: number, productId: string) => {
     const product = products.find((p) => p.id === productId);
     setItems((prev) =>
@@ -141,7 +212,7 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
   const addItem = () => {
     setItems((prev) => [
       ...prev,
-      { productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '' },
+      { productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '', categoryId: '' },
     ]);
   };
 
@@ -212,7 +283,7 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
 
       // Clear form and store
       setCompanyInfo({ companyName: '', contactName: '', email: '', phone: '', country: '' });
-      setItems([{ productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '' }]);
+      setItems([{ productId: '', productName: '', quantity: 1, unit: 'pcs', specs: '', categoryId: '' }]);
       setTechRequirements('');
       setMessage('');
       setAttachmentUrl('');
@@ -363,56 +434,100 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
           </h2>
 
           <div className="space-y-6">
-            {items.map((item, index) => (
-              <div
-                key={index}
-                className="p-5 rounded-xl bg-primary-50 border border-primary-100 relative"
-              >
-                {items.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="absolute top-3 right-3 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title={t('removeProduct')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+            {items.map((item, index) => {
+              const filteredProducts = getProductsForCategory(item.categoryId);
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {/* Product Select / Free Text */}
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>{t('productName')}</label>
-                    {products.length > 0 ? (
-                      <div className="flex gap-3">
-                        <select
-                          value={item.productId}
-                          onChange={(e) =>
-                            handleProductSelect(index, e.target.value)
-                          }
-                          className={inputClass + ' flex-1'}
-                        >
-                          <option value="">-- Select Product --</option>
-                          {products.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {getLocalizedName(p)} ({p.sku})
+              return (
+                <div
+                  key={index}
+                  className="p-5 rounded-xl bg-primary-50 border border-primary-100 relative"
+                >
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="absolute top-3 right-3 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title={t('removeProduct')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {/* Two-level product selection: Category → Product */}
+                    {categories.length > 0 && (
+                      <>
+                        {/* Level 1: Category */}
+                        <div>
+                          <label className={labelClass}>
+                            {t('selectCategory')}
+                          </label>
+                          <select
+                            value={item.categoryId}
+                            onChange={(e) => handleCategorySelect(index, e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="">{t('selectCategoryPlaceholder')}</option>
+                            {categories.map((cat) => (
+                              cat.children && cat.children.length > 0 ? (
+                                <optgroup key={cat.id} label={getLocalizedName(cat)}>
+                                  <option value={cat.id}>
+                                    {getLocalizedName(cat)} ({t('allInCategory')})
+                                  </option>
+                                  {cat.children.map((child) => (
+                                    <option key={child.id} value={child.id}>
+                                      &nbsp;&nbsp;{getLocalizedName(child)}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ) : (
+                                <option key={cat.id} value={cat.id}>
+                                  {getLocalizedName(cat)}
+                                </option>
+                              )
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Level 2: Product (shown after category selected) */}
+                        <div>
+                          <label className={labelClass}>
+                            {t('selectProduct')}
+                          </label>
+                          <select
+                            value={item.productId}
+                            onChange={(e) => handleProductSelect(index, e.target.value)}
+                            disabled={!item.categoryId}
+                            className={`${inputClass} ${!item.categoryId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <option value="">
+                              {item.categoryId
+                                ? (filteredProducts.length > 0
+                                    ? t('selectProductPlaceholder')
+                                    : t('noProductsInCategory'))
+                                : t('selectCategoryFirst')}
                             </option>
-                          ))}
-                        </select>
-                        <span className="self-center text-primary-400 text-sm">
-                          or
-                        </span>
-                        <input
-                          type="text"
-                          value={item.productName}
-                          onChange={(e) =>
-                            handleItemChange(index, 'productName', e.target.value)
-                          }
-                          placeholder="Type product name"
-                          className={inputClass + ' flex-1'}
-                        />
-                      </div>
-                    ) : (
+                            {filteredProducts.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {getLocalizedName(p)} ({p.sku})
+                              </option>
+                            ))}
+                          </select>
+                          {item.categoryId && filteredProducts.length > 0 && (
+                            <p className="text-xs text-primary-400 mt-1 flex items-center gap-1">
+                              <ChevronRight className="w-3 h-3" />
+                              {filteredProducts.length} {t('productsAvailable')}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Free-text product name (always available as fallback) */}
+                    <div className={categories.length > 0 ? 'sm:col-span-2' : 'sm:col-span-2'}>
+                      <label className={labelClass}>
+                        {categories.length > 0 ? t('orTypeProductName') : t('productName')}
+                      </label>
                       <input
                         type="text"
                         value={item.productName}
@@ -422,61 +537,61 @@ export default function QuoteForm({ products }: { products: ProductOption[] }) {
                         placeholder={t('productName')}
                         className={inputClass}
                       />
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Quantity */}
-                  <div>
-                    <label className={labelClass}>{t('quantity')}</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleItemChange(
-                          index,
-                          'quantity',
-                          parseInt(e.target.value) || 1
-                        )
-                      }
-                      className={inputClass}
-                    />
-                  </div>
+                    {/* Quantity */}
+                    <div>
+                      <label className={labelClass}>{t('quantity')}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleItemChange(
+                            index,
+                            'quantity',
+                            parseInt(e.target.value) || 1
+                          )
+                        }
+                        className={inputClass}
+                      />
+                    </div>
 
-                  {/* Unit */}
-                  <div>
-                    <label className={labelClass}>{t('unit')}</label>
-                    <select
-                      value={item.unit}
-                      onChange={(e) =>
-                        handleItemChange(index, 'unit', e.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      {UNITS.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    {/* Unit */}
+                    <div>
+                      <label className={labelClass}>{t('unit')}</label>
+                      <select
+                        value={item.unit}
+                        onChange={(e) =>
+                          handleItemChange(index, 'unit', e.target.value)
+                        }
+                        className={inputClass}
+                      >
+                        {UNITS.map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* Specs / Notes */}
-                  <div className="sm:col-span-2">
-                    <label className={labelClass}>Specifications / Notes</label>
-                    <textarea
-                      rows={2}
-                      value={item.specs}
-                      onChange={(e) =>
-                        handleItemChange(index, 'specs', e.target.value)
-                      }
-                      placeholder="Size, material, standard, or other requirements..."
-                      className={inputClass + ' resize-none'}
-                    />
+                    {/* Specs / Notes */}
+                    <div className="sm:col-span-2">
+                      <label className={labelClass}>Specifications / Notes</label>
+                      <textarea
+                        rows={2}
+                        value={item.specs}
+                        onChange={(e) =>
+                          handleItemChange(index, 'specs', e.target.value)
+                        }
+                        placeholder="Size, material, standard, or other requirements..."
+                        className={inputClass + ' resize-none'}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {errors.items && (
               <p className="text-red-500 text-xs">{errors.items}</p>

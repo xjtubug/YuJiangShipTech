@@ -187,9 +187,9 @@ export default function ExpertDashboardPage() {
   const getProductImage = (product: Product) => {
     try {
       const imgs = JSON.parse(product.images);
-      return Array.isArray(imgs) && imgs.length > 0 ? imgs[0] : '/images/placeholder.jpg';
+      return Array.isArray(imgs) && imgs.length > 0 ? imgs[0] : '/images/default-product.svg';
     } catch {
-      return '/images/placeholder.jpg';
+      return '/images/default-product.svg';
     }
   };
 

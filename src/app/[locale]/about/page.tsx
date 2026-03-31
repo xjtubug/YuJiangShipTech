@@ -14,6 +14,9 @@ const TeamSection = dynamic(() => import('@/components/about/TeamSection'), {
 const CertificatesSection = dynamic(() => import('@/components/about/CertificatesSection'), {
   loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
 });
+const LocationMapSection = dynamic(() => import('@/components/about/LocationMapSection'), {
+  loading: () => <div className="section-padding bg-white"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+});
 const CaseStudySection = dynamic(() => import('@/components/home/CaseStudySection'), {
   loading: () => <div className="section-padding bg-white"><div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" /></div>,
 });
@@ -72,6 +75,7 @@ export default async function AboutPage() {
 
       <CompanyIntro />
       <FactorySection />
+      <LocationMapSection />
       <TeamSection />
       <CaseStudySection cases={serializedCases} />
       <CertificatesSection certificates={serializedCertificates} />
