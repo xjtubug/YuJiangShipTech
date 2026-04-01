@@ -4,6 +4,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['next-intl'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
@@ -26,13 +27,13 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: config => {
     // Suppress next-intl build dependency parsing warning
     config.module.rules.push({
       test: /next-intl[\\/]dist[\\/].*\.js$/,
-      resolve: { fullySpecified: false },
-    });
-    return config;
+      resolve: { fullySpecified: false }
+    })
+    return config
   },
   async headers () {
     return [
