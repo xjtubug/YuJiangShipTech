@@ -5,10 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { NextIntlClientProvider } from 'next-intl';
 import AuthProvider from '@/components/common/AuthProvider';
 import { AdminLocaleProvider } from '@/contexts/AdminLocaleContext';
-import zhMessages from '@/messages/zh.json';
 import {
   MessageSquare,
   Package,
@@ -63,11 +61,9 @@ export default function AdminLayout({
 }) {
   return (
     <AuthProvider>
-      <NextIntlClientProvider locale="zh" messages={zhMessages}>
-        <AdminLocaleProvider>
-          <AdminLayoutInner>{children}</AdminLayoutInner>
-        </AdminLocaleProvider>
-      </NextIntlClientProvider>
+      <AdminLocaleProvider>
+        <AdminLayoutInner>{children}</AdminLayoutInner>
+      </AdminLocaleProvider>
     </AuthProvider>
   );
 }
