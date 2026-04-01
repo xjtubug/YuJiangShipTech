@@ -29,8 +29,10 @@ interface AdminUser {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; desc: string }> = {
+  super_admin: { label: '超级管理员', color: 'bg-red-100 text-red-700', icon: ShieldCheck, desc: '拥有最高权限' },
   admin: { label: '管理员', color: 'bg-orange-100 text-orange-700', icon: ShieldCheck, desc: '全部管理权限' },
   expert: { label: '专家', color: 'bg-purple-100 text-purple-700', icon: Award, desc: '专家评审' },
+  viewer: { label: '查看者', color: 'bg-gray-100 text-gray-700', icon: Users, desc: '只读访问' },
 };
 
 export default function UsersPage() {
