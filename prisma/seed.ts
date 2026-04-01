@@ -125,6 +125,8 @@ async function main() {
   await prisma.inquiry.deleteMany()
   await prisma.visitor.deleteMany()
   await prisma.review.deleteMany()
+  await prisma.customerComment.deleteMany()
+  await prisma.expertReview.deleteMany()
   await prisma.product.deleteMany()
   await prisma.category.deleteMany()
   await prisma.news.deleteMany()
