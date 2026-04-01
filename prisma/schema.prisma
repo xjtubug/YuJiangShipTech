@@ -70,8 +70,8 @@ model Review {
   company     String?
   country     String?
   rating      Int      @default(5)
-  contentEn   String @db.Text
-  contentZh   String   @default("")
+  contentEn   String   @db.Text
+  contentZh   String   @db.Text
   avatar      String?
   images      String   @default("[]") @db.VarChar(2000)
   approved    Boolean  @default(false)
@@ -202,12 +202,12 @@ model News {
   category      String   @default("company") // industry, company
   titleEn       String
   titleZh       String
-  titleJa       String   @default("")
-  titleAr       String   @default("")
+  titleJa       String   @db.Text
+  titleAr       String   @db.Text
   contentEn     String   @db.Text
   contentZh     String   @db.Text
-  contentJa     String   @default("")
-  contentAr     String   @default("")
+  contentJa     String   @db.Text
+  contentAr     String   @db.Text
   excerpt       String?
   image         String?
   images        String   @default("[]") @db.VarChar(5000) // carousel images
@@ -440,14 +440,14 @@ model MediaFile {
 model AboutContent {
   id          String   @id @default(uuid())
   section     String   @unique // intro, factory, team, location, pdf
-  titleEn     String   @default("")
-  titleZh     String   @default("")
-  contentEn   String   @default("") @db.Text
-  contentZh   String   @default("") @db.Text
+  titleEn     String   @db.Text
+  titleZh     String   @db.Text
+  contentEn   String   @db.Text
+  contentZh   String   @db.Text
   images      String   @default("[]") @db.VarChar(5000)
   videoUrl    String?
   pdfUrl      String?
-  extraJson   String   @default("{}") @db.Text
+  extraJson   String   @db.Text
   sortOrder   Int      @default(0)
   updatedAt   DateTime @updatedAt
 }
@@ -456,8 +456,8 @@ model TeamMember {
   id          String   @id @default(uuid())
   nameEn      String
   nameZh      String
-  titleEn     String   @default("")
-  titleZh     String   @default("")
+  titleEn     String   @db.Text
+  titleZh     String   @db.Text
   avatar      String?
   bio         String?  @db.Text
   sortOrder   Int      @default(0)

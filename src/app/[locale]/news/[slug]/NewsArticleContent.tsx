@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
@@ -43,17 +43,22 @@ interface Article {
   createdAt: string;
 }
 
+interface RelatedArticle extends Article {
+  publishedDateShort?: string;
+}
+
 interface Props {
   article: Article;
   locale: string;
-  relatedArticles: Article[];
+  publishedDate: string;
+  relatedArticles: RelatedArticle[];
 }
 
 function getLocalized<T>(map: Record<string, T>, locale: string, fallback: T): T {
   return map[locale] ?? fallback;
 }
 
-export default function NewsArticleContent({ article, locale, relatedArticles }: Props) {
+export default function NewsArticleContent({ article, locale, relatedArticles, publishedDate }: Props) {
   const tc = useTranslations('common');
   const [carouselIndex, setCarouselIndex] = useState(0);
 
@@ -85,10 +90,10 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
   const localizedTitle = getLocalized(titleMap, locale, article.titleEn);
   const localizedContent = getLocalized(contentMap, locale, article.contentEn) || article.contentEn;
 
-  const date = new Date(article.publishedAt || article.createdAt).toLocaleDateString(
-    locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
-    { year: 'numeric', month: 'long', day: 'numeric' }
-  );
+  // Use server-provided formatted date to avoid hydration mismatches
+  // (passed as prop from the parent server component)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const date = publishedDate || '';
 
   const backLabel: Record<string, string> = {
     en: 'Back to News',
@@ -116,6 +121,13 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
       navigator.clipboard.writeText(window.location.href);
     }
   };
+
+  // Current page URL is only available on the client — initialize as empty to avoid
+  // server/client HTML differences and populate in useEffect after hydration.
+  const [currentUrl, setCurrentUrl] = useState('');
+  useEffect(() => {
+    if (typeof window !== 'undefined') setCurrentUrl(window.location.href);
+  }, []);
 
   return (
     <section className="section-padding bg-white">
@@ -252,7 +264,7 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
                   {locale === 'zh' ? '复制链接' : locale === 'ja' ? 'リンクをコピー' : locale === 'ar' ? 'نسخ الرابط' : 'Copy Link'}
                 </button>
                 <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
+                  href={currentUrl ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}` : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0077B5]/10 text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-sm font-medium"
@@ -261,7 +273,7 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
                   LinkedIn
                 </a>
                 <a
-                  href={`mailto:?subject=${encodeURIComponent(localizedTitle)}&body=${typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''}`}
+                  href={currentUrl ? `mailto:?subject=${encodeURIComponent(localizedTitle)}&body=${encodeURIComponent(currentUrl)}` : `mailto:?subject=${encodeURIComponent(localizedTitle)}`}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm font-medium"
                 >
                   <Mail className="h-4 w-4" />
@@ -299,10 +311,7 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
                     ar: ra.titleAr,
                   };
                   const raTitle = getLocalized(raTitleMap, locale, ra.titleEn);
-                  const raDate = new Date(ra.publishedAt || ra.createdAt).toLocaleDateString(
-                    locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
-                    { year: 'numeric', month: 'short', day: 'numeric' }
-                  );
+                  const raDate = ra.publishedDateShort || '';
 
                   return (
                     <Link

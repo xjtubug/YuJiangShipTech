@@ -530,6 +530,21 @@ export default async function NewsDetailPage({
   };
   const localizedTitle = titleMap[locale] || article.titleEn;
 
+  // Pre-format dates on the server to avoid client/server hydration differences
+  const publishedDate = new Date(article.publishedAt || article.createdAt).toLocaleDateString(
+    locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
+    { year: 'numeric', month: 'long', day: 'numeric' }
+  );
+
+  // Short date for related articles
+  const relatedWithDates = related.map((r) => ({
+    ...r,
+    publishedDateShort: new Date(r.publishedAt || r.createdAt).toLocaleDateString(
+      locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
+      { year: 'numeric', month: 'short', day: 'numeric' }
+    ),
+  }));
+
   return (
     <>
       {/* Hero Banner */}
@@ -555,7 +570,8 @@ export default async function NewsDetailPage({
       <NewsArticleContent
         article={article}
         locale={locale}
-        relatedArticles={related}
+        publishedDate={publishedDate}
+        relatedArticles={relatedWithDates}
       />
     </>
   );
