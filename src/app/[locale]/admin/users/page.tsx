@@ -32,6 +32,8 @@ const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.El
   super_admin: { label: '超级管理员', color: 'bg-red-100 text-red-700', icon: ShieldCheck, desc: '拥有最高权限' },
   admin: { label: '管理员', color: 'bg-orange-100 text-orange-700', icon: ShieldCheck, desc: '全部管理权限' },
   expert: { label: '专家', color: 'bg-purple-100 text-purple-700', icon: Award, desc: '专家评审' },
+  sales: { label: '销售', color: 'bg-amber-100 text-amber-700', icon: Users, desc: '负责销售与客户' },
+  logistics: { label: '物流', color: 'bg-teal-100 text-teal-700', icon: Users, desc: '物流与仓储' },
   viewer: { label: '查看者', color: 'bg-gray-100 text-gray-700', icon: Users, desc: '只读访问' },
 };
 
@@ -223,12 +225,12 @@ export default function UsersPage() {
       {/* Role Legend */}
       <div className="flex flex-wrap gap-2">
         {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
-          const Icon = cfg.icon;
+          const Icon = cfg?.icon;
           return (
-            <div key={key} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-              <Icon className="w-3 h-3" />
-              {cfg.label}
-              <span className="text-[10px] opacity-70">— {cfg.desc}</span>
+            <div key={key} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg?.color}`}>
+              {Icon ? <Icon className="w-3 h-3" /> : <span className="w-3 h-3 inline-block" />}
+              {cfg?.label}
+              <span className="text-[10px] opacity-70">— {cfg?.desc}</span>
             </div>
           );
         })}
@@ -252,7 +254,7 @@ export default function UsersPage() {
             <tbody className="divide-y divide-gray-100">
               {filtered.map((user) => {
                 const roleCfg = ROLE_CONFIG[user.role] || ROLE_CONFIG.viewer;
-                const RoleIcon = roleCfg.icon;
+                const RoleIcon = roleCfg?.icon;
                 return (
                   <tr key={user.id} className={`hover:bg-gray-50 ${!user.active ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3">
