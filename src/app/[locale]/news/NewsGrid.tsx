@@ -18,6 +18,7 @@ interface NewsArticle {
   excerpt: string | null;
   image: string | null;
   category: string;
+  publishedAt?: string;
   createdAt: string;
 }
 
@@ -93,7 +94,7 @@ export default function NewsGrid({ news, locale, categories, categoryLabels }: N
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {filtered.map((article, i) => {
-            const date = new Date(article.createdAt).toLocaleDateString(
+            const date = new Date(article.publishedAt || article.createdAt).toLocaleDateString(
               locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
               { year: 'numeric', month: 'short', day: 'numeric' }
             );

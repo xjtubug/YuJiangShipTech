@@ -3,23 +3,17 @@ import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import CompanyIntro from '@/components/about/CompanyIntro';
 
-const FactorySection = dynamic(() => import('@/components/about/FactorySection'), {
-  loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
+const loadingBlock = (bg = 'bg-white') => ({
+  loading: () => <div className={`section-padding ${bg}`}><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
 });
-const TeamSection = dynamic(() => import('@/components/about/TeamSection'), {
-  loading: () => <div className="section-padding bg-white"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
-});
-const CertificatesSection = dynamic(() => import('@/components/about/CertificatesSection'), {
-  loading: () => <div className="section-padding bg-slate-50"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
-});
-const LocationMapSection = dynamic(() => import('@/components/about/LocationMapSection'), {
-  loading: () => <div className="section-padding bg-white"><div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" /></div>,
-});
-const CaseStudySection = dynamic(() => import('@/components/home/CaseStudySection'), {
-  loading: () => <div className="section-padding bg-white"><div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" /></div>,
-});
+
+const CompanyIntro = dynamic(() => import('@/components/about/CompanyIntro'), { ssr: false, ...loadingBlock() });
+const FactorySection = dynamic(() => import('@/components/about/FactorySection'), { ssr: false, ...loadingBlock('bg-slate-50') });
+const TeamSection = dynamic(() => import('@/components/about/TeamSection'), { ssr: false, ...loadingBlock() });
+const CertificatesSection = dynamic(() => import('@/components/about/CertificatesSection'), { ssr: false, ...loadingBlock('bg-slate-50') });
+const LocationMapSection = dynamic(() => import('@/components/about/LocationMapSection'), { ssr: false, ...loadingBlock() });
+const CaseStudySection = dynamic(() => import('@/components/home/CaseStudySection'), { ssr: false, ...loadingBlock() });
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('about');

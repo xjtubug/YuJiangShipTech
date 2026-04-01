@@ -1,45 +1,36 @@
 import { getTranslations } from "next-intl/server";
 import dynamic from "next/dynamic";
 import prisma from "@/lib/prisma";
-import HeroSection from "@/components/home/HeroSection";
+
+const loadingBlock = (bg = "bg-white", h = "h-64") => ({
+	loading: () => (
+		<div className={`section-padding ${bg}`}>
+			<div className={`container-wide ${h} animate-pulse bg-slate-100 rounded-2xl`} />
+		</div>
+	),
+});
+
+const HeroSection = dynamic(
+	() => import("@/components/home/HeroSection"),
+	{ ssr: false, loading: () => <div className="min-h-screen bg-primary-900" /> },
+);
 
 const FeaturedProducts = dynamic(
 	() => import("@/components/home/FeaturedProducts"),
-	{
-		loading: () => (
-			<div className="section-padding bg-white">
-				<div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" />
-			</div>
-		),
-	},
+	{ ssr: false, ...loadingBlock() },
 );
 
 const AdvantagesSection = dynamic(
 	() => import("@/components/home/AdvantagesSection"),
-	{
-		loading: () => (
-			<div className="section-padding bg-white">
-				<div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" />
-			</div>
-		),
-	},
+	{ ssr: false, ...loadingBlock() },
 );
 const CertificationsSection = dynamic(
 	() => import("@/components/home/CertificationsSection"),
-	{
-		loading: () => (
-			<div className="section-padding bg-slate-50">
-				<div className="container-wide h-48 animate-pulse bg-slate-100 rounded-2xl" />
-			</div>
-		),
-	},
+	{ ssr: false, ...loadingBlock("bg-slate-50", "h-48") },
 );
 const NewsSection = dynamic(() => import("@/components/home/NewsSection"), {
-	loading: () => (
-		<div className="section-padding bg-white">
-			<div className="container-wide h-64 animate-pulse bg-slate-100 rounded-2xl" />
-		</div>
-	),
+	ssr: false,
+	...loadingBlock(),
 });
 export const revalidate = 300;
 

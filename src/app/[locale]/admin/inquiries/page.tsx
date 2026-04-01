@@ -32,6 +32,7 @@ interface Inquiry {
   country: string | null;
   message: string | null;
   techRequirements: string | null;
+  attachmentUrl: string | null;
   status: string;
   createdAt: string;
   items: InquiryItem[];
@@ -362,6 +363,30 @@ export default function InquiriesPage() {
                                   {inq.techRequirements && (
                                     <div><span className="text-gray-500 font-medium">Tech Requirements: </span><span className="text-gray-700">{inq.techRequirements}</span></div>
                                   )}
+                                  {inq.attachmentUrl && (
+                                    <div>
+                                      <span className="text-gray-500 font-medium">附件: </span>
+                                      {(() => {
+                                        const url = inq.attachmentUrl!;
+                                        const ext = url.split('.').pop()?.toLowerCase() || '';
+                                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'].includes(ext);
+                                        return (
+                                          <div className="mt-1">
+                                            {isImage ? (
+                                              <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={url} alt="附件预览" className="max-w-xs max-h-48 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow" />
+                                              </a>
+                                            ) : (
+                                              <a href={url} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm text-primary-600 hover:text-primary-700 transition-colors">
+                                                <Download className="w-4 h-4" /> 下载附件 (.{ext})
+                                              </a>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
                                 </div>
                                 <div>
                                   <span className="text-gray-500 font-medium block mb-2">Products:</span>
@@ -472,7 +497,35 @@ export default function InquiriesPage() {
                                 {c.phone && <div><span className="text-gray-500 font-medium">电话: </span><span className="text-gray-700">{c.phone}</span></div>}
                                 <div><span className="text-gray-500 font-medium">消息: </span><span className="text-gray-700 whitespace-pre-wrap">{c.message}</span></div>
                                 {c.attachmentUrl && (
-                                  <div><span className="text-gray-500 font-medium">附件: </span><a href={c.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">查看附件</a></div>
+                                  <div>
+                                    <span className="text-gray-500 font-medium">附件: </span>
+                                    {(() => {
+                                      const url = c.attachmentUrl;
+                                      const ext = url.split('.').pop()?.toLowerCase() || '';
+                                      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'].includes(ext);
+                                      return (
+                                        <div className="mt-2 inline-flex flex-col gap-2">
+                                          {isImage ? (
+                                            <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                                              <img src={url} alt="附件预览" className="max-w-xs max-h-48 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow" />
+                                            </a>
+                                          ) : (
+                                            <a
+                                              href={url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              download
+                                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm text-primary-600 hover:text-primary-700 transition-colors shadow-sm"
+                                            >
+                                              <Download className="w-4 h-4" />
+                                              下载附件 (.{ext})
+                                            </a>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
                                 )}
                               </div>
                             </td>

@@ -1,9 +1,16 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import QuoteForm from '@/components/quote/QuoteForm';
-import InquiryCartSidebar from '@/components/quote/InquiryCartSidebar';
+
+const QuoteForm = dynamic(() => import('@/components/quote/QuoteForm'), {
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-[500px]" />,
+});
+const InquiryCartSidebar = dynamic(() => import('@/components/quote/InquiryCartSidebar'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-64" />,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('inquiry');

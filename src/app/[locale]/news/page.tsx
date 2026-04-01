@@ -30,6 +30,7 @@ interface NewsItem {
   source: string | null;
   category: string;
   published: boolean;
+  publishedAt: string;
   createdAt: string;
 }
 
@@ -48,8 +49,9 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'New IMO regulations require significant upgrades to marine equipment. Learn how this affects the industry.',
     image: null,
     source: 'IMO Press',
-    category: 'Regulation',
+    category: 'industry',
     published: true,
+    publishedAt: '2024-12-15T08:00:00.000Z',
     createdAt: '2024-12-15T08:00:00.000Z',
   },
   {
@@ -66,8 +68,9 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'Our new 20,000㎡ facility expansion brings faster delivery and higher production capacity.',
     image: null,
     source: 'Company News',
-    category: 'Company',
+    category: 'company',
     published: true,
+    publishedAt: '2024-11-28T10:00:00.000Z',
     createdAt: '2024-11-28T10:00:00.000Z',
   },
   {
@@ -84,8 +87,9 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'IoT sensors and digital twins are reducing maritime maintenance costs by up to 30%.',
     image: null,
     source: 'Maritime Executive',
-    category: 'Technology',
+    category: 'industry',
     published: true,
+    publishedAt: '2024-11-10T09:00:00.000Z',
     createdAt: '2024-11-10T09:00:00.000Z',
   },
   {
@@ -102,8 +106,9 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'Our latest marine valve series has earned DNV-GL type approval for DN50-DN600 range.',
     image: null,
     source: 'Company News',
-    category: 'Certification',
+    category: 'company',
     published: true,
+    publishedAt: '2024-10-22T07:30:00.000Z',
     createdAt: '2024-10-22T07:30:00.000Z',
   },
   {
@@ -120,8 +125,9 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'LNG and hydrogen fuel systems are creating new demands for marine equipment manufacturers.',
     image: null,
     source: 'Ship Technology',
-    category: 'Industry',
+    category: 'industry',
     published: true,
+    publishedAt: '2024-10-05T11:00:00.000Z',
     createdAt: '2024-10-05T11:00:00.000Z',
   },
   {
@@ -138,18 +144,16 @@ const fallbackNews: NewsItem[] = [
     excerpt: 'Chinese shipyards account for over 50% of global new-build orders, driving equipment demand.',
     image: null,
     source: 'CANSI Report',
-    category: 'Industry',
+    category: 'industry',
     published: true,
+    publishedAt: '2024-09-18T06:00:00.000Z',
     createdAt: '2024-09-18T06:00:00.000Z',
   },
 ];
 
 const categoryLabels: Record<string, Record<string, string>> = {
-  Regulation: { en: 'Regulation', zh: '法规', ja: '規制', ar: 'التنظيمات' },
-  Company: { en: 'Company', zh: '公司动态', ja: '企業情報', ar: 'أخبار الشركة' },
-  Technology: { en: 'Technology', zh: '技术', ja: 'テクノロジー', ar: 'التكنولوجيا' },
-  Certification: { en: 'Certification', zh: '认证', ja: '認証', ar: 'الشهادات' },
-  Industry: { en: 'Industry', zh: '行业', ja: '業界', ar: 'الصناعة' },
+  industry: { en: 'Industry News', zh: '行业新闻', ja: '業界ニュース', ar: 'أخبار الصناعة' },
+  company: { en: 'Company News', zh: '公司新闻', ja: '企業ニュース', ar: 'أخبار الشركة' },
 };
 
 export default async function NewsPage({
@@ -166,13 +170,14 @@ export default async function NewsPage({
   try {
     const dbNews = await prisma.news.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
     });
     if (dbNews.length > 0) {
       newsItems = dbNews.map((n) => ({
         ...n,
-        category: n.source || 'Company',
+        category: n.category || 'company',
         published: true,
+        publishedAt: n.publishedAt.toISOString(),
         createdAt: n.createdAt.toISOString(),
       }));
     } else {

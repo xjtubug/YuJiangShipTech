@@ -38,7 +38,9 @@ export async function generateMetadata({
     },
   });
 
-  if (!product) return { title: 'Product Not Found' };
+  if (!product) {
+    notFound();
+  }
 
   const nameKey = `name${locale.charAt(0).toUpperCase() + locale.slice(1)}` as keyof typeof product;
   const descKey = `desc${locale.charAt(0).toUpperCase() + locale.slice(1)}` as keyof typeof product;

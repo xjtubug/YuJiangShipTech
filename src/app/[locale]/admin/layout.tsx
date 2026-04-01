@@ -277,7 +277,7 @@ function AdminLayoutInner({
                         >
                           <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.title}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('zh-CN')}</p>
+                          <p className="text-xs text-gray-400 mt-1" suppressHydrationWarning>{new Date(n.createdAt).toLocaleString('zh-CN')}</p>
                         </Link>
                       ))
                     )}

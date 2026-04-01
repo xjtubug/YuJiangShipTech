@@ -29,7 +29,6 @@ import {
   TrendingUp,
   Filter,
   Star,
-  Activity,
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -355,7 +354,6 @@ export default function CustomersPage() {
 
   const statCards = useMemo(() => [
     { label: '客户总数', value: stats.total, icon: Users, color: 'bg-blue-50 text-blue-600' },
-    { label: '活跃客户', value: stats.active, icon: Activity, color: 'bg-green-50 text-green-600', sub: '近30天有询价' },
     { label: '本月新增', value: stats.newThisMonth, icon: TrendingUp, color: 'bg-purple-50 text-purple-600' },
     { label: '询价来源', value: stats.bySource.inquiry ?? 0, icon: FileText, color: 'bg-amber-50 text-amber-600' },
   ], [stats]);
@@ -388,7 +386,7 @@ export default function CustomersPage() {
       </div>
 
       {/* ==================== STATS ==================== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((s) => {
           const Icon = s.icon;
           return (
@@ -398,7 +396,6 @@ export default function CustomersPage() {
               </div>
               <p className="text-2xl font-bold text-gray-900">{s.value}</p>
               <p className="text-xs text-gray-500">{s.label}</p>
-              {'sub' in s && s.sub && <p className="text-[10px] text-gray-400 mt-0.5">{s.sub}</p>}
             </div>
           );
         })}

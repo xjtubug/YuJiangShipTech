@@ -26,6 +26,14 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  webpack: (config) => {
+    // Suppress next-intl build dependency parsing warning
+    config.module.rules.push({
+      test: /next-intl[\\/]dist[\\/].*\.js$/,
+      resolve: { fullySpecified: false },
+    });
+    return config;
+  },
   async headers () {
     return [
       {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
@@ -13,6 +14,9 @@ import {
   Share2,
   Link2,
   Mail,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/image-utils';
@@ -30,9 +34,12 @@ interface Article {
   contentAr: string;
   excerpt: string | null;
   image: string | null;
+  images: string;
   source: string | null;
+  sourceUrl: string | null;
   category: string;
   author: string;
+  publishedAt: string;
   createdAt: string;
 }
 
@@ -48,6 +55,20 @@ function getLocalized<T>(map: Record<string, T>, locale: string, fallback: T): T
 
 export default function NewsArticleContent({ article, locale, relatedArticles }: Props) {
   const tc = useTranslations('common');
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const categoryLabels: Record<string, Record<string, string>> = {
+    industry: { en: 'Industry News', zh: '行业新闻', ja: '業界ニュース', ar: 'أخبار الصناعة' },
+    company: { en: 'Company News', zh: '公司新闻', ja: '企業ニュース', ar: 'أخبار الشركة' },
+  };
+
+  let carouselImages: string[] = [];
+  try {
+    const parsed = JSON.parse(article.images || '[]');
+    if (Array.isArray(parsed)) carouselImages = parsed.filter((s: unknown) => typeof s === 'string' && s.length > 0);
+  } catch {
+    // invalid JSON
+  }
 
   const titleMap: Record<string, string> = {
     en: article.titleEn,
@@ -64,7 +85,7 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
   const localizedTitle = getLocalized(titleMap, locale, article.titleEn);
   const localizedContent = getLocalized(contentMap, locale, article.contentEn) || article.contentEn;
 
-  const date = new Date(article.createdAt).toLocaleDateString(
+  const date = new Date(article.publishedAt || article.createdAt).toLocaleDateString(
     locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
@@ -119,14 +140,64 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
               </span>
               <span className="flex items-center gap-1.5 bg-primary-100 text-primary-700 px-2.5 py-0.5 rounded-full font-medium">
                 <Tag className="h-3.5 w-3.5" />
-                {article.category}
+                {categoryLabels[article.category]?.[locale] || article.category}
               </span>
             </div>
 
-            {/* Hero Image Placeholder */}
-            {article.image ? (
+            {/* Image / Carousel */}
+            {carouselImages.length > 1 ? (
+              <div className="relative w-full rounded-xl overflow-hidden mb-8">
+                <div className="relative h-72 md:h-96">
+                  {carouselImages.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className={`absolute inset-0 transition-opacity duration-500 ${idx === carouselIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    >
+                      <Image
+                        src={getImageUrl(img)}
+                        alt={`${localizedTitle} - ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCarouselIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setCarouselIndex((prev) => (prev + 1) % carouselImages.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                  {carouselImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`w-2.5 h-2.5 rounded-full transition-colors ${idx === carouselIndex ? 'bg-white' : 'bg-white/50'}`}
+                      aria-label={`Go to image ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : article.image ? (
               <Image
                 src={getImageUrl(article.image)}
+                alt={localizedTitle}
+                width={1200}
+                height={600}
+                className="w-full rounded-xl mb-8 max-h-96 object-cover"
+              />
+            ) : carouselImages.length === 1 ? (
+              <Image
+                src={getImageUrl(carouselImages[0])}
                 alt={localizedTitle}
                 width={1200}
                 height={600}
@@ -148,6 +219,21 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
                 prose-a:text-secondary-600 prose-a:no-underline hover:prose-a:underline"
               dangerouslySetInnerHTML={{ __html: localizedContent }}
             />
+
+            {/* Source Link */}
+            {article.sourceUrl && (
+              <div className="mt-6 flex items-center gap-2">
+                <a
+                  href={article.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary-600 hover:text-secondary-700 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {locale === 'zh' ? '查看原文' : locale === 'ja' ? '元記事を見る' : locale === 'ar' ? 'عرض المصدر' : 'View Source'}
+                </a>
+              </div>
+            )}
 
             {/* Share Buttons */}
             <motion.div
@@ -213,7 +299,7 @@ export default function NewsArticleContent({ article, locale, relatedArticles }:
                     ar: ra.titleAr,
                   };
                   const raTitle = getLocalized(raTitleMap, locale, ra.titleEn);
-                  const raDate = new Date(ra.createdAt).toLocaleDateString(
+                  const raDate = new Date(ra.publishedAt || ra.createdAt).toLocaleDateString(
                     locale === 'zh' ? 'zh-CN' : locale === 'ja' ? 'ja-JP' : locale === 'ar' ? 'ar-SA' : 'en-US',
                     { year: 'numeric', month: 'short', day: 'numeric' }
                   );

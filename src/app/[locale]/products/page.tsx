@@ -3,11 +3,13 @@ import dynamic from 'next/dynamic';
 import { getTranslations } from 'next-intl/server';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import ProductFilters from '@/components/products/ProductFilters';
 import ProductGrid from '@/components/products/ProductGrid';
 import { Link } from '@/i18n/navigation';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 
+const ProductFilters = dynamic(() => import('@/components/products/ProductFilters'), {
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-96" />,
+});
 const CompareDrawer = dynamic(() => import('@/components/products/CompareDrawer'), { ssr: false });
 export const revalidate = 300;
 

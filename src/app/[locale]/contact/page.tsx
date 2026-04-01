@@ -1,8 +1,14 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import ContactForm from '@/components/contact/ContactForm';
-import ContactInfo from '@/components/contact/ContactInfo';
+
+const ContactForm = dynamic(() => import('@/components/contact/ContactForm'), {
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-96" />,
+});
+const ContactInfo = dynamic(() => import('@/components/contact/ContactInfo'), {
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-64" />,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('contact');

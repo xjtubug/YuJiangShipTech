@@ -1,8 +1,12 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import prisma from '@/lib/prisma';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import CertificatesGrid from './CertificatesGrid';
+
+const CertificatesGrid = dynamic(() => import('./CertificatesGrid'), {
+  loading: () => <div className="animate-pulse bg-slate-100 rounded-2xl h-96" />,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('certificates');

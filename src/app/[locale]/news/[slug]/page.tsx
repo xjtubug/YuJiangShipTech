@@ -18,9 +18,12 @@ const fallbackArticles: Record<string, {
   contentAr: string;
   excerpt: string | null;
   image: string | null;
+  images: string;
   source: string | null;
+  sourceUrl: string | null;
   category: string;
   author: string;
+  publishedAt: string;
   createdAt: string;
 }> = {
   'imo-2024-emission-regulations': {
@@ -92,9 +95,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'New IMO regulations require significant upgrades to marine equipment. Learn how this affects the industry.',
     image: null,
+    images: '[]',
     source: 'IMO Press',
-    category: 'Regulation',
+    sourceUrl: null,
+    category: 'industry',
     author: 'YuJiang Technical Team',
+    publishedAt: '2024-12-15T08:00:00.000Z',
     createdAt: '2024-12-15T08:00:00.000Z',
   },
   'yujiang-expands-production-capacity': {
@@ -158,9 +164,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'Our new 20,000㎡ facility expansion brings faster delivery and higher production capacity.',
     image: null,
+    images: '[]',
     source: 'Company News',
-    category: 'Company',
+    sourceUrl: null,
+    category: 'company',
     author: 'YuJiang PR Department',
+    publishedAt: '2024-11-28T10:00:00.000Z',
     createdAt: '2024-11-28T10:00:00.000Z',
   },
   'smart-shipping-iot-trends-2025': {
@@ -228,9 +237,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'IoT sensors and digital twins are reducing maritime maintenance costs by up to 30%.',
     image: null,
+    images: '[]',
     source: 'Maritime Executive',
-    category: 'Technology',
+    sourceUrl: null,
+    category: 'industry',
     author: 'Maritime Technology Review',
+    publishedAt: '2024-11-10T09:00:00.000Z',
     createdAt: '2024-11-10T09:00:00.000Z',
   },
   'dnv-certification-achievement': {
@@ -280,9 +292,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'Our latest marine valve series has earned DNV-GL type approval for DN50-DN600 range.',
     image: null,
+    images: '[]',
     source: 'Company News',
-    category: 'Certification',
+    sourceUrl: null,
+    category: 'company',
     author: 'YuJiang Quality Department',
+    publishedAt: '2024-10-22T07:30:00.000Z',
     createdAt: '2024-10-22T07:30:00.000Z',
   },
   'green-shipbuilding-trends': {
@@ -328,9 +343,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'LNG and hydrogen fuel systems are creating new demands for marine equipment manufacturers.',
     image: null,
+    images: '[]',
     source: 'Ship Technology',
-    category: 'Industry',
+    sourceUrl: null,
+    category: 'industry',
     author: 'Ship Technology Report',
+    publishedAt: '2024-10-05T11:00:00.000Z',
     createdAt: '2024-10-05T11:00:00.000Z',
   },
   'china-shipbuilding-output-record': {
@@ -384,9 +402,12 @@ const fallbackArticles: Record<string, {
     contentAr: '',
     excerpt: 'Chinese shipyards account for over 50% of global new-build orders, driving equipment demand.',
     image: null,
+    images: '[]',
     source: 'CANSI Report',
-    category: 'Industry',
+    sourceUrl: null,
+    category: 'industry',
     author: 'Industry Analysis Team',
+    publishedAt: '2024-09-18T06:00:00.000Z',
     createdAt: '2024-09-18T06:00:00.000Z',
   },
 };
@@ -401,24 +422,31 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
 
-  let title = 'Not Found';
-  let description = '';
-
   try {
     const article = await prisma.news.findUnique({ where: { slug } });
     if (article) {
       const titleMap: Record<string, string> = { en: article.titleEn, zh: article.titleZh, ja: article.titleJa, ar: article.titleAr };
-      title = titleMap[locale] || article.titleEn;
-      description = article.excerpt || article.contentEn.substring(0, 160);
+      const title = titleMap[locale] || article.titleEn;
+      const description = article.excerpt || article.contentEn.substring(0, 160);
+      return { title, description, openGraph: { title, description } };
     }
   } catch {
-    const fb = fallbackArticles[slug];
-    if (fb) {
-      const titleMap: Record<string, string> = { en: fb.titleEn, zh: fb.titleZh, ja: fb.titleJa, ar: fb.titleAr };
-      title = titleMap[locale] || fb.titleEn;
-      description = fb.excerpt || '';
-    }
+    // Fall through to bundled fallback content.
   }
+
+  const fallbackArticle = fallbackArticles[slug];
+  if (!fallbackArticle) {
+    notFound();
+  }
+
+  const titleMap: Record<string, string> = {
+    en: fallbackArticle.titleEn,
+    zh: fallbackArticle.titleZh,
+    ja: fallbackArticle.titleJa,
+    ar: fallbackArticle.titleAr,
+  };
+  const title = titleMap[locale] || fallbackArticle.titleEn;
+  const description = fallbackArticle.excerpt || '';
 
   return { title, description, openGraph: { title, description } };
 }
@@ -439,8 +467,11 @@ export default async function NewsDetailPage({
     if (dbArticle) {
       article = {
         ...dbArticle,
-        category: dbArticle.source || 'Company',
+        images: dbArticle.images || '[]',
+        sourceUrl: dbArticle.sourceUrl || null,
+        category: dbArticle.category || 'company',
         author: 'YuJiang Technical Team',
+        publishedAt: dbArticle.publishedAt.toISOString(),
         createdAt: dbArticle.createdAt.toISOString(),
       };
     }
@@ -467,14 +498,17 @@ export default async function NewsDetailPage({
   try {
     const dbItems = await prisma.news.findMany({
       where: { published: true, slug: { not: slug } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       take: 3,
     });
     if (dbItems.length > 0) {
       dbRelated = dbItems.map((n) => ({
         ...n,
-        category: n.source || 'Company',
+        images: n.images || '[]',
+        sourceUrl: n.sourceUrl || null,
+        category: n.category || 'company',
         author: '',
+        publishedAt: n.publishedAt.toISOString(),
         createdAt: n.createdAt.toISOString(),
         contentJa: n.contentJa || '',
         contentAr: n.contentAr || '',
